@@ -31,6 +31,8 @@ required=(
   notebooks/atera_from_arraylake.ipynb
   scripts/build_spatialdata_notebook.py
   scripts/fetch_spatialdata_pr1107.py
+  notebooks/spatialdata_versioning.ipynb
+  scripts/build_versioning_notebook.py
 )
 # An empty list would pass for the wrong reason.
 [ "${#required[@]}" -eq 0 ] && { echo "REQUIRED LIST EMPTY"; fail=1; }

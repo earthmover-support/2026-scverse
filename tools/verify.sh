@@ -7,11 +7,12 @@
 # measure nothing, and the script names each one in a SKIPPED summary at the end.
 #
 # With --with-data it demands the local h5ads, fails if any data-dependent check still skips,
-# and also runs compare-s3-run. It does not run the other notebooks.
+# and also runs compare-s3-run and versioning-run. It does not run the other notebooks.
 #
 # compare-s3-run regenerates its notebook. In a git checkout the script restores the committed
 # version after, and refuses to run at all when that notebook holds uncommitted changes.
 # Elsewhere it can do neither, and says so before the run.
+# versioning-run follows the same rule, and it needs the fork from 'pixi run -e spatial sdpr'.
 set -u
 cd "$(dirname "$0")/.." || exit 1
 
@@ -108,6 +109,25 @@ if [ "$with_data" -eq 1 ]; then
         echo "FAILED: could not restore $nb. It still holds the fresh outputs."
         fail=1
       fi
+    fi
+  fi
+
+  nb=notebooks/spatialdata_versioning.ipynb
+  fork=$PWD/vendor/spatialdata-1107/src
+  if [ ! -d "$fork" ]; then
+    echo "FAILED: versioning-run needs the SpatialData fork at $fork"
+    echo "Run 'pixi run -e spatial sdpr' first. See docs/fork-pin.md."
+    fail=1
+  elif [ "$tracked" -eq 1 ] && ! git diff --quiet -- "$nb"; then
+    echo "FAILED: $nb has uncommitted changes."
+    echo "versioning-run regenerates it, and those changes cannot be recovered."
+    fail=1
+  else
+    run env PYTHONPATH="$fork" pixi run -e spatial --frozen versioning-run
+    if git checkout -- "$nb"; then
+      echo "RESTORED: $nb, which versioning-run had regenerated."
+    else
+      echo "FAILED: could not restore $nb."; fail=1
     fi
   fi
 fi
