@@ -1,0 +1,110 @@
+From: Luiz Irber <luiz@earthmover.io>
+Subject: [PATCH] Let a fallback supply the parquet filesystem for a store
+ without a path
+
+`parquet_fs_and_path` derives an fsspec filesystem for `LocalStore` and
+`FsspecStore`. It raises for any other store. So the shapes and points
+writers fail on a store that has no filesystem path, such as a
+`MemoryStore`.
+
+`io_shapes` and `io_points` only call `fs.open(path, ...)` on the result.
+This adds one module attribute, `parquet_fs_fallback`. `parquet_fs_and_path`
+calls it before the raise. An extension sets it to supply a filesystem for
+its own store type. spatialdata gains no dependency.
+
+Two tests cover it. `parquet_fs_and_path` calls the fallback for a
+`MemoryStore` and not for a `LocalStore`.
+
+diff --git a/src/spatialdata/_store.py b/src/spatialdata/_store.py
+index 378dda9..7c17e78 100644
+--- a/src/spatialdata/_store.py
++++ b/src/spatialdata/_store.py
+@@ -1,5 +1,6 @@
+ from __future__ import annotations
+ 
++from collections.abc import Callable
+ from contextlib import contextmanager
+ from pathlib import Path
+ from typing import Any, TypeAlias
+@@ -10,6 +11,10 @@ from zarr.storage import FsspecStore, LocalStore
+ 
+ PathLike: TypeAlias = Path | UPath
+ 
++#: :func:`parquet_fs_and_path` calls this as ``parquet_fs_fallback(store, group, child)`` for a
++#: store without a filesystem path. It returns an ``(fsspec_filesystem, path)`` pair or ``None``.
++parquet_fs_fallback: Callable[[Any, zarr.Group, str], tuple[Any, str] | None] | None = None
++
+ 
+ def normalize_path(path: str | PathLike, storage_options: dict[str, Any] | None = None) -> PathLike:
+     """Normalize a path-like input to ``Path`` (local) or ``UPath`` (remote)."""
+@@ -107,6 +112,9 @@ def parquet_fs_and_path(group: zarr.Group, *child_parts: str) -> tuple[Any, str]
+         sub = f"{group.path}/{child}" if child else group.path
+         return fs, join_fsspec_store_path(store.path, sub)
+ 
++    if parquet_fs_fallback is not None and (resolved := parquet_fs_fallback(store, group, child)) is not None:
++        return resolved
++
+     raise ValueError(f"Cannot derive a filesystem for store of type {type(store).__name__}")
+ 
+ 
+diff --git a/tests/io/test_store.py b/tests/io/test_store.py
+index e3b910e..b11dc38 100644
+--- a/tests/io/test_store.py
++++ b/tests/io/test_store.py
+@@ -8,6 +8,7 @@ import zarr
+ from upath import UPath
+ from zarr.storage import FsspecStore, LocalStore, MemoryStore
+ 
++import spatialdata._store
+ from spatialdata import SpatialData
+ from spatialdata._io._utils import _resolve_zarr_store
+ from spatialdata._store import (
+@@ -172,3 +173,45 @@ def test_write_to_memory_store_raises() -> None:
+     sdata = SpatialData()
+     with pytest.raises(NotImplementedError, match="does not expose a filesystem path"):
+         sdata.write(MemoryStore())
++
++
++def test_parquet_fs_fallback_is_called_for_a_store_without_a_filesystem() -> None:
++    """The fallback supplies the filesystem that `parquet_fs_and_path` cannot derive from the store."""
++    root = zarr.create_group(store=MemoryStore(), zarr_format=3)
++    group = root.require_group("points").require_group("p1")
++    sentinel = object()
++
++    with pytest.raises(ValueError, match="Cannot derive a filesystem"):
++        parquet_fs_and_path(group, "points.parquet")
++
++    def fallback(store, resolved_group, child):
++        assert isinstance(store, MemoryStore)
++        return sentinel, f"{resolved_group.path}/{child}"
++
++    spatialdata._store.parquet_fs_fallback = fallback
++    try:
++        fs, path = parquet_fs_and_path(group, "points.parquet")
++        assert fs is sentinel
++        assert path == "points/p1/points.parquet"
++    finally:
++        spatialdata._store.parquet_fs_fallback = None
++
++    with pytest.raises(ValueError, match="Cannot derive a filesystem"):
++        parquet_fs_and_path(group, "points.parquet")
++
++
++def test_parquet_fs_fallback_is_not_called_for_a_local_store(tmp_path: Path) -> None:
++    """A fallback does not replace the filesystem `parquet_fs_and_path` derives for a local store."""
++
++    def fallback(store, group, child):
++        raise AssertionError(f"fallback called for {type(store).__name__}")
++
++    spatialdata._store.parquet_fs_fallback = fallback
++    try:
++        with open_write_store(tmp_path / "store.zarr") as store:
++            root = zarr.create_group(store=store, overwrite=True)
++            group = root.require_group("points").require_group("p1")
++            fs, path = parquet_fs_and_path(group, "points.parquet")
++            assert path == str(tmp_path / "store.zarr" / "points" / "p1" / "points.parquet")
++    finally:
++        spatialdata._store.parquet_fs_fallback = None
+-- 
+2.50.1 (Apple Git-155)
+

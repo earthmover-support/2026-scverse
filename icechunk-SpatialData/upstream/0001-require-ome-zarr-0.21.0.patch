@@ -1,0 +1,24 @@
+From: Luiz Irber <luiz@earthmover.io>
+Subject: [PATCH] Require ome-zarr 0.21.0
+
+ome-zarr 0.21.0 lets `ZarrLocation` take any zarr store or a `StorePath`.
+Earlier releases raise `TypeError` for a store other than `LocalStore` and
+`FsspecStore`. The raster reader needs this to read a store that has no
+filesystem path.
+
+diff --git a/pyproject.toml b/pyproject.toml
+index 03181ea..c8f15d1 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -35,7 +35,7 @@ dependencies = [
+     "networkx",
+     "numba>=0.55.0",
+     "numpy",
+-    "ome_zarr>=0.16.0",
++    "ome_zarr>=0.21.0",
+     "pandas",
+     "pooch",
+     "pyarrow",
+-- 
+2.50.1 (Apple Git-155)
+

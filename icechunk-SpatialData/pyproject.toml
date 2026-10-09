@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "icechunk-spatialdata"
+version = "0.0.1"
+description = "A prototype putting SpatialData on Icechunk, to inform an upstream conversation"
+requires-python = ">=3.11"
+dependencies = ["spatialdata>=0.8", "icechunk>=2.1", "zarr>=3.3", "zarr-files"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["icechunk_spatialdata"]
+
+[tool.pytest.ini_options]
+markers = [
+  "network: needs public S3 access",
+  "arraylake: needs an Arraylake login, and reads a published demo repository",
+]

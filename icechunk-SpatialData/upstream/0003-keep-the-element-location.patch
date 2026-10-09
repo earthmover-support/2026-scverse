@@ -1,0 +1,113 @@
+From: Luiz Irber <luiz@earthmover.io>
+Subject: [PATCH] Keep the element's location when the store cannot be
+ re-rooted
+
+`read_zarr` documents `MemoryStore` as a supported input. It fails on one
+that `SpatialData.write()` produced, in two places.
+
+`_read_multiscale` gives `ome_zarr.io.ZarrLocation` the store from
+`store_from_group`. For a store it cannot re-root, that function returns
+the parent store unchanged. `ZarrLocation` then reads the container root.
+The reader finds no image and raises `OSError`. This passes a `StorePath`
+that names the group's prefix inside that store. Every store that
+`store_from_group` re-roots keeps the existing path.
+
+`_read_zarr_group_spatialdata_element` re-opens points, shapes and tables
+from `store_from_group`. For the same store, the reader receives the
+container root, not the element group. `anndata.read_zarr` then raises on
+the unexpected keys. This keeps the element group for that store.
+
+Two tests cover it. They copy a written store key for key into a
+`MemoryStore` and read rasters and tables from it.
+
+diff --git a/src/spatialdata/_io/io_raster.py b/src/spatialdata/_io/io_raster.py
+index a9d4632..8efbcad 100644
+--- a/src/spatialdata/_io/io_raster.py
++++ b/src/spatialdata/_io/io_raster.py
+@@ -16,6 +16,7 @@ from ome_zarr.writer import write_labels as write_labels_ngff
+ from ome_zarr.writer import write_multiscale as write_multiscale_ngff
+ from ome_zarr.writer import write_multiscale_labels as write_multiscale_labels_ngff
+ from xarray import DataArray, DataTree
++from zarr.storage import StorePath
+ 
+ from spatialdata._io._utils import (
+     _get_transformations_from_ngff_dict,
+@@ -166,6 +167,9 @@ def _read_multiscale(
+     # ome_zarr.io.ZarrLocation needs a store rooted at this group's location, not at the
+     # SpatialData container root, so we re-root the parent store at ``group.path``.
+     resolved_store = store_from_group(group, read_only=True)
++    if resolved_store is group.store:
++        # store_from_group cannot re-root this store. Name the group's prefix inside it instead.
++        resolved_store = StorePath(group.store, group.path)
+ 
+     nodes: list[Node] = []
+     image_loc = ZarrLocation(resolved_store, fmt=reader_format)
+diff --git a/src/spatialdata/_io/io_zarr.py b/src/spatialdata/_io/io_zarr.py
+index c10c5e4..7279a6b 100644
+--- a/src/spatialdata/_io/io_zarr.py
++++ b/src/spatialdata/_io/io_zarr.py
+@@ -84,8 +84,11 @@ def _read_zarr_group_spatialdata_element(
+                         # consolidated-metadata cache would otherwise mask a corrupted or
+                         # missing element-level ``zarr.json`` / ``.zattrs``. Re-open from the
+                         # store so the corruption surfaces as OSError / JSONDecodeError.
+-                        elem_group_fresh = open_zarr_for_read(
+-                            store_from_group(elem_group, read_only=True), as_group=True
++                        # A fresh open of a store that store_from_group cannot re-root yields the
++                        # container root. Keep the element group.
++                        rerooted = store_from_group(elem_group, read_only=True)
++                        elem_group_fresh = (
++                            elem_group if rerooted is elem_group.store else open_zarr_for_read(rerooted, as_group=True)
+                         )
+                         element = read_func(elem_group_fresh)
+                     else:
+diff --git a/tests/io/test_store.py b/tests/io/test_store.py
+index b11dc38..f3522ec 100644
+--- a/tests/io/test_store.py
++++ b/tests/io/test_store.py
+@@ -1,5 +1,6 @@
+ from __future__ import annotations
+ 
++import asyncio
+ import tempfile
+ from pathlib import Path
+ 
+@@ -215,3 +216,36 @@ def test_parquet_fs_fallback_is_not_called_for_a_local_store(tmp_path: Path) ->
+             assert path == str(tmp_path / "store.zarr" / "points" / "p1" / "points.parquet")
+     finally:
+         spatialdata._store.parquet_fs_fallback = None
++
++
++def _copy_store(source: LocalStore) -> MemoryStore:
++    """A MemoryStore that holds the same keys and bytes as `source`."""
++
++    async def copy() -> MemoryStore:
++        memory = MemoryStore()
++        prototype = zarr.core.buffer.default_buffer_prototype()
++        async for key in source.list():
++            await memory.set(key, await source.get(key, prototype=prototype))
++        return memory
++
++    return asyncio.run(copy())
++
++
++def test_read_rasters_from_a_store_without_a_path(images: SpatialData, tmp_path: Path) -> None:
++    """The raster reader reads the element group of a `MemoryStore`, not the container root."""
++    path = tmp_path / "images.zarr"
++    images.write(path)
++
++    read = SpatialData.read(_copy_store(LocalStore(str(path), read_only=True)))
++    assert_spatial_data_objects_are_identical(images, read)
++
++
++def test_read_table_from_a_store_without_a_path(full_sdata: SpatialData, tmp_path: Path) -> None:
++    """The table reader receives the table group, not the container root."""
++    path = tmp_path / "full.zarr"
++    full_sdata.write(path)
++
++    read = SpatialData.read(_copy_store(LocalStore(str(path), read_only=True)), selection=("tables",))
++    assert set(read.tables) == set(full_sdata.tables)
++    for name, table in read.tables.items():
++        assert table.shape == full_sdata.tables[name].shape
+-- 
+2.50.1 (Apple Git-155)
+

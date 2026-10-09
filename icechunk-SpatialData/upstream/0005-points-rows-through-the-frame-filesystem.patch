@@ -1,0 +1,106 @@
+From: Luiz Irber <luiz@earthmover.io>
+Subject: [PATCH] Count points rows through the frame's own filesystem
+
+`SpatialData.__repr__` counts the rows of a points element from the parquet
+metadata of its backing files. It opens them as local paths, so the repr of
+an object read from any other fsspec filesystem raises `FileNotFoundError`.
+A `memory://` path reproduces it.
+
+`get_dask_backing_files` also resolves every parquet path against the working
+directory. A path that another filesystem names, such as `bucket/key`, is not
+a local path. This resolves only the paths of a local read, which the read
+task's `ParquetFunctionWrapper.fs` identifies.
+
+The repr reads the metadata through the frame's own filesystem when it has
+one. Two tests cover it: the backing files of a `DirFileSystem` read keep
+their paths, and the repr of a `memory://` round trip shows the row counts.
+
+diff --git a/src/spatialdata/_core/spatialdata.py b/src/spatialdata/_core/spatialdata.py
+index 2f194e3..ef7bbcc 100644
+--- a/src/spatialdata/_core/spatialdata.py
++++ b/src/spatialdata/_core/spatialdata.py
+@@ -2080,7 +2080,10 @@ class SpatialData:
+                     length: int | None = None
+                     backing_files = get_dask_backing_files(v)
+                     if backing_files:
+-                        length = sum(pq.read_metadata(f).num_rows for f in backing_files)
++                        # Read through the frame's own filesystem: a remote or in-memory parquet
++                        # has no local path.
++                        filesystem = getattr(getattr(v, "expr", None), "filesystem", None)
++                        length = sum(pq.read_metadata(f, filesystem=filesystem).num_rows for f in backing_files)
+ 
+                     n = len(get_axes_names(v))
+                     dim_string = f"({n}D points)"
+diff --git a/src/spatialdata/_io/_utils.py b/src/spatialdata/_io/_utils.py
+index 183e92d..e84d213 100644
+--- a/src/spatialdata/_io/_utils.py
++++ b/src/spatialdata/_io/_utils.py
+@@ -20,6 +20,7 @@ from anndata import AnnData
+ from dask._task_spec import Task
+ from dask.array import Array as DaskArray
+ from dask.dataframe import DataFrame as DaskDataFrame
++from fsspec.implementations.local import LocalFileSystem
+ from geopandas import GeoDataFrame
+ from upath import UPath
+ from upath.implementations.local import PosixUPath, WindowsUPath
+@@ -442,8 +443,12 @@ def _search_for_backing_files_recursively(subgraph: Any, files: list[str]) -> No
+                     #     combined with other arrays (see ``test_self_contained``).
+                     # Any false-positive key that matches but carries no parquet payload is filtered
+                     # inside ``_extract_parquet_paths_from_task`` (paths must ``endswith(".parquet")``).
++                    # Only a local path resolves against the working directory. A frame read through
++                    # another fsspec filesystem keeps the paths that filesystem names.
++                    fs = getattr(getattr(v, "func", None), "fs", None)
++                    local = fs is None or isinstance(fs, LocalFileSystem)
+                     for parquet_file in _extract_parquet_paths_from_task(v):
+-                        files.append(os.path.realpath(parquet_file))
++                        files.append(os.path.realpath(parquet_file) if local else parquet_file)
+ 
+ 
+ def _backed_elements_contained_in_path(
+diff --git a/tests/io/test_utils.py b/tests/io/test_utils.py
+index b0ba429..d17bbd2 100644
+--- a/tests/io/test_utils.py
++++ b/tests/io/test_utils.py
+@@ -5,9 +5,12 @@ import tempfile
+ from contextlib import nullcontext
+ 
+ import dask.dataframe as dd
++import fsspec
+ import numpy as np
+ import pandas as pd
+ import pytest
++from fsspec.implementations.dirfs import DirFileSystem
++from fsspec.implementations.memory import MemoryFileSystem
+ from upath import UPath
+ 
+ from spatialdata import SpatialData, read_zarr
+@@ -58,6 +61,26 @@ def test_backing_files_points(points):
+         assert set(files) == set(expected_zarr_locations_legacy) or set(files) == set(expected_zarr_locations_new)
+ 
+ 
++def test_backing_files_keep_the_paths_of_another_filesystem(tmp_path):
++    """Backing files of a frame read through an fsspec filesystem keep that filesystem's paths."""
++    (tmp_path / "points/p/points.parquet").mkdir(parents=True)
++    pd.DataFrame({"x": [1.0, 2.0, 3.0]}).to_parquet(tmp_path / "points/p/points.parquet/part.0.parquet")
++    frame = dd.read_parquet(
++        "points/p/points.parquet", filesystem=DirFileSystem(path=str(tmp_path), fs=fsspec.filesystem("file"))
++    )
++    assert get_dask_backing_files(frame) == ["points/p/points.parquet/part.0.parquet"]
++
++
++def test_repr_counts_points_rows_through_the_frame_filesystem(points: SpatialData) -> None:
++    """The row count in the repr reads parquet metadata where the frame reads its data."""
++    upath = UPath("memory://repr.zarr", fs=MemoryFileSystem(skip_instance_cache=True))
++    points.write(upath, overwrite=True)
++
++    text = repr(SpatialData.read(upath))
++    for name, frame in points.points.items():
++        assert f"{name!r}: DataFrame with shape: ({len(frame)}, " in text, text
++
++
+ def test_backing_files_images(images):
+     """
+     Test the ability to identify the backing files of single scale and multiscale images from examining their
+-- 
+2.50.1 (Apple Git-155)
+

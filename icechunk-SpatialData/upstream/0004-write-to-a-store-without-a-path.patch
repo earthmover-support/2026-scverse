@@ -1,0 +1,188 @@
+From: Luiz Irber <luiz@earthmover.io>
+Subject: [PATCH] Write to a store that has no filesystem path
+
+`write()` accepts a zarr store, derives a path from it, and raises
+`NotImplementedError` for a store that has none, such as `MemoryStore`. The
+comment gives the reason: the per-element machinery re-opens stores from the
+path.
+
+`_get_groups_for_element` resolves whatever it receives, and
+`_resolve_zarr_store` returns a store unchanged. So the element writers can
+take the store as the target. `write()` skips the three steps that need a
+path: the directory checks, the `sdata.path` record and consolidation.
+`open_write_store` yields a store passed in as is, because the caller owns
+it.
+
+This reverses a deliberate restriction, so two tests replace
+`test_write_to_memory_store_raises`. One test round-trips images through a
+`MemoryStore`. Another asserts that `sdata.path` stays `None` and that a
+later write to a path sets it.
+
+The round-trip test needs the read fix in the previous commit.
+
+diff --git a/src/spatialdata/_core/spatialdata.py b/src/spatialdata/_core/spatialdata.py
+index 6ab0c8b..2f194e3 100644
+--- a/src/spatialdata/_core/spatialdata.py
++++ b/src/spatialdata/_core/spatialdata.py
+@@ -1035,7 +1035,7 @@ class SpatialData:
+ 
+     def _validate_can_safely_write_to_path(
+         self,
+-        file_path: str | Path | UPath,
++        file_path: str | Path | UPath | zarr.abc.store.Store,
+         overwrite: bool = False,
+         saving_an_element: bool = False,
+     ) -> None:
+@@ -1056,6 +1056,10 @@ class SpatialData:
+             _resolve_zarr_store,
+         )
+ 
++        # A store without a filesystem path has no directory for the checks below.
++        if isinstance(file_path, zarr.abc.store.Store):
++            return
++
+         # Hierarchical URIs ("scheme://...") must become UPath: plain Path(str) breaks cloud URLs
+         # (S3-compatible stores, Azure abfs:// / az://, GCS gs://, https://, fsspec chains, etc.).
+         if isinstance(file_path, str) and "://" in file_path:
+@@ -1223,17 +1227,11 @@ class SpatialData:
+ 
+         # Resolve all input forms (str / Path / StoreLike) to a path the internal per-element
+         # write machinery can use. For zarr stores, derive a backing path via path_from_store;
+-        # stores without a filesystem path (e.g. MemoryStore) are rejected here because the
+-        # per-element machinery currently re-opens stores from the path.
++        # Use the path of a store that has one. The element writers take any other store as is.
+         if isinstance(file_path, zarr.abc.store.Store):
+             derived = path_from_store(file_path)
+-            if derived is None:
+-                raise NotImplementedError(
+-                    f"Writing to a store of type {type(file_path).__name__} is not supported "
+-                    "because it does not expose a filesystem path. Pass a LocalStore, FsspecStore, "
+-                    "or a path/UPath instead."
+-                )
+-            file_path = derived
++            if derived is not None:
++                file_path = derived
+         else:
+             file_path = normalize_path(file_path)
+         self._validate_can_safely_write_to_path(file_path, overwrite=overwrite)
+@@ -1256,6 +1254,10 @@ class SpatialData:
+                 raster_compressor=raster_compressor,
+             )
+ 
++        if isinstance(file_path, zarr.abc.store.Store):
++            # There is no path to record, and consolidation re-opens the store by path.
++            return
++
+         if self.path != file_path and update_sdata_path:
+             self._path = file_path
+ 
+@@ -1265,7 +1267,7 @@ class SpatialData:
+     def _write_element(
+         self,
+         element: SpatialElement | AnnData,
+-        zarr_container_path: Path | UPath,
++        zarr_container_path: Path | UPath | zarr.abc.store.Store,
+         element_type: str,
+         element_name: str,
+         overwrite: bool,
+@@ -1275,11 +1277,16 @@ class SpatialData:
+     ) -> None:
+         from spatialdata._io.io_zarr import _get_groups_for_element
+ 
+-        if not isinstance(zarr_container_path, (Path, UPath)):
++        if not isinstance(zarr_container_path, (Path, UPath, zarr.abc.store.Store)):
+             raise ValueError(
+-                f"zarr_container_path must be a `Path` or `UPath` object, got {type(zarr_container_path).__name__}."
++                "zarr_container_path must be a `Path`, `UPath` or zarr store, "
++                f"got {type(zarr_container_path).__name__}."
+             )
+-        file_path_of_element = zarr_container_path / element_type / element_name
++        file_path_of_element = (
++            zarr_container_path / element_type / element_name
++            if isinstance(zarr_container_path, (Path, UPath))
++            else zarr_container_path
++        )
+         self._validate_can_safely_write_to_path(
+             file_path=file_path_of_element, overwrite=overwrite, saving_an_element=True
+         )
+diff --git a/src/spatialdata/_io/io_zarr.py b/src/spatialdata/_io/io_zarr.py
+index 7279a6b..8c9ce1f 100644
+--- a/src/spatialdata/_io/io_zarr.py
++++ b/src/spatialdata/_io/io_zarr.py
+@@ -278,7 +278,7 @@ def read_zarr(
+ 
+ 
+ def _get_groups_for_element(
+-    zarr_path: Path | UPath, element_type: str, element_name: str, use_consolidated: bool = True
++    zarr_path: Path | UPath | zarr.abc.store.Store, element_type: str, element_name: str, use_consolidated: bool = True
+ ) -> tuple[zarr.Group, zarr.Group, zarr.Group]:
+     """
+     Get the Zarr groups for the root, element_type and element for a specific element.
+@@ -307,8 +307,8 @@ def _get_groups_for_element(
+     -------
+     The Zarr groups for the root, element_type and element for a specific element.
+     """
+-    if not isinstance(zarr_path, (Path, UPath)):
+-        raise ValueError("zarr_path should be a Path or UPath object")
++    if not isinstance(zarr_path, (Path, UPath, zarr.abc.store.Store)):
++        raise ValueError("zarr_path should be a Path, UPath or zarr store")
+ 
+     if element_type not in [
+         "images",
+diff --git a/src/spatialdata/_store.py b/src/spatialdata/_store.py
+index 7c17e78..974aca3 100644
+--- a/src/spatialdata/_store.py
++++ b/src/spatialdata/_store.py
+@@ -165,10 +165,15 @@ def open_zarr_for_read(store: Any, *, as_group: bool = True) -> Any:
+ 
+ 
+ @contextmanager
+-def open_write_store(path: PathLike) -> Any:
++def open_write_store(path: PathLike | zarr.abc.store.Store) -> Any:
+     """Open *path* as a writable zarr backend store (``read_only=False``)."""
+     from spatialdata._io._utils import _resolve_zarr_store
+ 
++    # Yield a store passed in as is. The caller owns it and closes it.
++    if isinstance(path, zarr.abc.store.Store):
++        yield path
++        return
++
+     resolved_store = _resolve_zarr_store(path, read_only=False)
+     try:
+         yield resolved_store
+diff --git a/tests/io/test_store.py b/tests/io/test_store.py
+index f3522ec..732360a 100644
+--- a/tests/io/test_store.py
++++ b/tests/io/test_store.py
+@@ -169,11 +169,23 @@ def test_write_and_read_via_local_store(points: SpatialData, tmp_path: Path) ->
+     assert_spatial_data_objects_are_identical(points, read)
+ 
+ 
+-def test_write_to_memory_store_raises() -> None:
+-    """A store with no filesystem path (MemoryStore) is rejected with a clear error."""
+-    sdata = SpatialData()
+-    with pytest.raises(NotImplementedError, match="does not expose a filesystem path"):
+-        sdata.write(MemoryStore())
++def test_write_to_memory_store_round_trips(images: SpatialData) -> None:
++    """`write()` writes to a store with no filesystem path directly, and `read_zarr` reads it back."""
++    store = MemoryStore()
++    images.write(store)
++
++    read = SpatialData.read(store)
++    assert_spatial_data_objects_are_identical(images, read)
++
++
++def test_write_to_memory_store_does_not_set_a_path(images: SpatialData, tmp_path: Path) -> None:
++    """`sdata.path` stays `None` after such a write, and a later write to a path still sets it."""
++    images.write(MemoryStore())
++    assert images.path is None
++
++    path = tmp_path / "after.zarr"
++    images.write(path)
++    assert images.path == path
+ 
+ 
+ def test_parquet_fs_fallback_is_called_for_a_store_without_a_filesystem() -> None:
+-- 
+2.50.1 (Apple Git-155)
+

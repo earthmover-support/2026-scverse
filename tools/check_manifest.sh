@@ -15,6 +15,21 @@ required=(
   tools/check_manifest.sh tools/check_paths.py tools/check_tasks.py
   tools/check_docstrings.py tools/check_notices.py tools/check_readme.py
   tools/check_claims.py tools/verify.sh
+  icechunk-SpatialData/pyproject.toml
+  icechunk-SpatialData/UPSTREAM.md
+  icechunk-SpatialData/README.md
+  icechunk-SpatialData/icechunk_spatialdata/__init__.py
+  icechunk-SpatialData/tests/test_roundtrip.py
+  icechunk-SpatialData/tests/test_exports.py
+  icechunk-SpatialData/upstream/0001-require-ome-zarr-0.21.0.patch
+  icechunk-SpatialData/upstream/0005-points-rows-through-the-frame-filesystem.patch
+  notebooks/spatialdata_on_icechunk.ipynb
+  notebooks/xenium_tutorial_virtual.ipynb
+  notebooks/squidpy_xenium_virtual.ipynb
+  notebooks/xenium_from_arraylake.ipynb
+  notebooks/atera_from_arraylake.ipynb
+  scripts/build_spatialdata_notebook.py
+  scripts/fetch_spatialdata_pr1107.py
 )
 # An empty list would pass for the wrong reason.
 [ "${#required[@]}" -eq 0 ] && { echo "REQUIRED LIST EMPTY"; fail=1; }
