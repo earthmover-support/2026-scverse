@@ -106,6 +106,14 @@ with isd.transaction(repo, "main", "mark the table reviewed") as second, isd.par
 print("second snapshot:", second.snapshot)
 """)
 
+code("""
+# The object that `read_zarr` returned has no path, so `write_element` refuses it.
+try:
+    edit.write_element("table", overwrite=True)
+except ValueError as exc:
+    print(f"ValueError: {exc}")
+""")
+
 md("""
 ## The history
 

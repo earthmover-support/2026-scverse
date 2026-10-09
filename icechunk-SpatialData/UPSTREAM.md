@@ -106,8 +106,10 @@ applied. `read_zarr(store)` sets no `path` on the object, because a store has no
 and `write_element` tests `self.path is None` in `_core/spatialdata.py`. So `is_backed()` is false.
 
 We did not write a patch. The workaround writes through the element writers, which take a
-`zarr.Group`: delete the old group, then call `write_table` or `write_shapes` on the session's
-root group. `spatialdata_versioning.ipynb` shows both.
+`zarr.Group`. To replace an existing element, delete its group first, then call the writer on the
+session's root group. A new element needs no delete. `spatialdata_versioning.ipynb` replaces the
+table with `write_table` after a delete, and adds the shapes with `write_shapes` and no delete.
+The notebook also runs the failing `write_element` call and prints the error.
 
 ## The fix in ome-zarr-py
 
