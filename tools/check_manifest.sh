@@ -78,29 +78,31 @@ if grep -rIl -e 'probes/' . --exclude-dir=.git --exclude-dir=.pixi --exclude-dir
   fi
 fi
 
-# The manifest must hold only the census feature, and census must cover both platforms.
-for f in spatial tiff plot squidpy tiffparser tiles lamin rust; do
+# The manifest must name the workspace, both platforms, and exactly the expected tasks.
+for f in tiff plot squidpy tiffparser tiles lamin rust census; do
   grep -q "feature\.$f" pixi.toml && { echo "FEATURE LEFT: $f"; fail=1; }
 done
 grep -q 'platforms = \["osx-arm64", "linux-64"\]' pixi.toml || { echo "WORKSPACE PLATFORMS WRONG"; fail=1; }
 python3 - <<'PY' || fail=1
 import sys, tomllib
 m = tomllib.load(open("pixi.toml", "rb"))
-plats = m["feature"]["census"].get("platforms", [])
-if sorted(plats) != ["linux-64", "osx-arm64"]:
-    print("CENSUS PLATFORMS:", plats); sys.exit(1)
+if m["workspace"]["name"] != "2026-scverse":
+    print("WORKSPACE NAME:", m["workspace"]["name"]); sys.exit(1)
+if sorted(m["workspace"]["platforms"]) != ["linux-64", "osx-arm64"]:
+    print("PLATFORMS:", m["workspace"]["platforms"]); sys.exit(1)
 envs = set(m.get("environments", {}))
-if envs != {"census"}:
+if envs != {"spatial"}:
     print("ENVIRONMENTS:", envs); sys.exit(1)
 tasks = set(m.get("tasks", {}))
-expected = {"lab","test","test-slow","compare-public","compare-public-run",
- "compare-spatial","compare-spatial-run","merfish","merfish-run",
- "compare-s3","compare-s3-run","notebook","notebook-run",
- "check","check-tenx","check-concat","check-s3","check-sparsity","check-soma",
- "check-policy","check-codecs","check-rectilinear","check-delta","check-icechunk",
- "check-manifest","check-gene-axis"}
+for feat in m.get("feature", {}).values():
+    tasks |= set(feat.get("tasks", {}))
+expected = {"lab","check","check-s3","check-concat","check-icechunk",
+ "check-manifest","check-sparsity","check-tenx","check-store-path",
+ "equivalence","equivalence-run","versioning","versioning-run",
+ "notebook","notebook-run","spatialdata","spatialdata-run","sdpr","spike-test"}
 if tasks != expected:
-    print("TASKS extra:", sorted(tasks-expected), "missing:", sorted(expected-tasks)); sys.exit(1)
+    print("TASKS extra:", sorted(tasks-expected), "missing:", sorted(expected-tasks))
+    sys.exit(1)
 PY
 
 [ "$fail" -eq 0 ] && echo "manifest OK (${#required[@]} required, ${#forbidden[@]} forbidden)"
