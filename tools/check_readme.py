@@ -4,8 +4,14 @@ Every required phrase is a claim a run supports, or a command that reproduces on
 patterns are corrections this repository already made. A pattern stops the old wording from
 returning quietly: 11.95 GB called "referenced", and `parquet_fs_and_path` blamed for the
 released-package failure. Released spatialdata fails earlier, at `store.root`.
+
+Two cross-checks compare the README against something outside it. One reads the equivalence
+figures out of the committed notebook that produced them. The other recomputes the Braun
+ratio from the two byte counts the README prints. A banned string cannot catch a number that
+is merely wrong, and these two can.
 """
 
+import json
 import pathlib
 import re
 import sys
@@ -58,6 +64,72 @@ BANNED_PATTERNS = [
 MINIMUM_WORDS = 900
 MINIMUM_CLAIM_ROWS = 8
 
+# The equivalence figures the README quotes come from one committed run. Each pattern reads a
+# value out of that notebook's outputs, and the README must carry the same value.
+EQUIVALENCE_NB = ROOT / "notebooks" / "scanpy_equivalence.ipynb"
+EQUIVALENCE_FIGURES = [
+    (r"(\d+) genes have a defined dispersion", "genes with a defined dispersion"),
+    (r"defined dispersion, (\d+) have none", "genes without a dispersion"),
+    (r"highly variable genes: (\d+) virtual", "highly variable genes"),
+    (r"Jaccard: ([\d.]+)", "Jaccard index"),
+    (r"dispersion correlation: ([\d.]+)", "dispersion correlation"),
+]
+# The Braun ratio a reader recomputes by dividing two figures the README prints. The divisor
+# counts no snapshot, so the quotient is an upper bound and the README must say so.
+RATIO_TERMS = [
+    r"([\d,]+) virtual bytes",
+    r"([\d,]+) native bytes",
+    r"287 manifest files holding ([\d,]+) bytes",
+]
+RATIO_CLAIM = r"ratio of referenced bytes to stored bytes is about (\d+) to 1"
+RATIO_TOLERANCE = 5
+
+
+def notebook_text(path):
+    """Return every output of one committed notebook as one string."""
+    nb = json.loads(path.read_text())
+    out = []
+    for cell in nb["cells"]:
+        for o in cell.get("outputs", []):
+            out.append("".join(o.get("text", [])))
+            out.append("".join(o.get("data", {}).get("text/plain", [])))
+    return "\n".join(out)
+
+
+def equivalence_problems(digits):
+    """Yield each measured figure of the committed run that the README does not carry."""
+    text = notebook_text(EQUIVALENCE_NB)
+    for pattern, what in EQUIVALENCE_FIGURES:
+        found = re.search(pattern, text)
+        if found is None:
+            yield f"{EQUIVALENCE_NB.name} states no {what}"
+        # A bare substring test passes 1.0000 against 1.000000, so the value stands alone.
+        elif not re.search(rf"(?<![\d.]){re.escape(found.group(1))}(?!\d)", digits):
+            yield f"README omits the measured {what}: {found.group(1)}"
+
+
+def ratio_problems():
+    """Yield the ratio problems: a missing figure, a wrong quotient, or a missing bound."""
+    # A wrapped line splits a phrase across a newline, so the search reads one flat line.
+    flat = " ".join(README.split())
+    values = []
+    for pattern in RATIO_TERMS:
+        found = re.search(pattern, flat)
+        if found is None:
+            yield f"README states no figure matching {pattern}"
+            return
+        values.append(int(found.group(1).replace(",", "")))
+    stated = re.search(RATIO_CLAIM, flat)
+    if stated is None:
+        yield "README states no referenced-to-stored ratio"
+        return
+    computed = values[0] / (values[1] + values[2])
+    if abs(computed - int(stated.group(1))) > RATIO_TOLERANCE:
+        yield (f"README says {stated.group(1)} to 1, the printed figures give "
+               f"{computed:.1f} to 1")
+    if "upper bound" not in flat:
+        yield "README does not call the ratio an upper bound"
+
 
 def over_long(text):
     """Yield each sentence of one prose chunk that passes the 20-word limit."""
@@ -108,6 +180,10 @@ def main():
     rows = claim_rows()
     if rows < MINIMUM_CLAIM_ROWS:
         bad.append(f"the claims table holds {rows} rows, floor {MINIMUM_CLAIM_ROWS}")
+
+    # The README groups its digits, so the comparison drops the separators.
+    bad.extend(equivalence_problems(README.replace(",", "")))
+    bad.extend(ratio_problems())
 
     # Every pixi task the README names must exist in the manifest.
     manifest = tomllib.loads((ROOT / "pixi.toml").read_text())

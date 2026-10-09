@@ -15,18 +15,36 @@ Each row names the command, or the committed notebook, that supports it.
 
 | claim | how to check it |
 |---|---|
-| An `.h5ad` matrix virtualizes into Icechunk and reads back identical | `pixi run check-s3` |
+| An `.h5ad` matrix virtualizes into Icechunk | `pixi run check-s3` |
+| It reads back identical to h5py, when `h5ads/` holds the source file | `pixi run check-s3` |
 | scanpy gets the same answers from the virtual AnnData and from the `.h5ad` | `pixi run equivalence-run` |
 | A 10x Xenium matrix is already CSR over cells, so it needs no transpose | `pixi run check-tenx` |
 | A dense Zarr chunk grid cannot encode single-cell sparsity | `pixi run check-sparsity` |
 | Icechunk gives a SpatialData store commits and history | `pixi run -e spatial versioning-run` |
-| Images, labels and tables already work on Icechunk | `pixi run check-store-path` |
+| An image writes to an Icechunk store and reads back | `pixi run check-store-path` |
+| Labels and tables write unmodified too | `pixi run -e spatial versioning-run`, [`UPSTREAM.md`](icechunk-SpatialData/UPSTREAM.md) |
 | Shapes need a filesystem path on released packages | `pixi run check-store-path` |
-| Referencing an atlas stores no expression bytes | `notebooks/virtualize_braun.ipynb`, committed |
+| The Braun atlas store holds no expression bytes | `notebooks/virtualize_braun.ipynb`, committed |
 | A whole 10x Xenium bundle is addressable by reference | `notebooks/xenium_from_arraylake.ipynb`, committed |
-| An unmodified scverse tutorial runs against a store holding almost none of its data | `notebooks/xenium_tutorial_virtual.ipynb`, committed |
+| The scverse Xenium tutorial runs against a store holding almost none of its data | `notebooks/xenium_tutorial_virtual.ipynb`, committed |
 | The squidpy Xenium tutorial runs the same way | `notebooks/squidpy_xenium_virtual.ipynb`, committed |
 | One 89 GB published object opens as a SpatialData store | `notebooks/atera_from_arraylake.ipynb`, committed |
+
+### The tutorial notebooks are not unmodified
+
+Each tutorial notebook keeps the tutorial's text and its calls. Each lists every difference it
+makes, under a heading of its own. One difference is substantive. `morphology_focus` holds one
+channel, not four, because 10x deflate the other three inside a zip. No reference can point
+into a deflated member.
+
+### Two reference stores, measured
+
+`notebooks/xenium_from_arraylake.ipynb` addresses 1.33 GB of published Xenium files with 313
+references. It copies 14.0 MB of that, which is 1.05%. The copies are the chunk tails and
+nothing else.
+
+`notebooks/atera_from_arraylake.ipynb` opens one published 89 GB `outs.zip`. The store holds
+47,599 element byte ranges. It holds no copy of the pixels and no copy of the counts.
 
 ### The Braun atlas, measured
 
@@ -40,8 +58,8 @@ bytes are the CSR chunks of eleven source files, and nothing else. The same call
 15.17 MB.
 
 Neither call counts snapshots. The store therefore holds at least 35 MB, and that figure is a
-lower bound rather than a total. The ratio of referenced bytes to stored bytes is better than
-322 to 1.
+lower bound rather than a total. The ratio of referenced bytes to stored bytes is about
+320 to 1. That ratio is an upper bound, because the divisor is a lower bound.
 
 The eleven source files total 11.95 GB on disk. That number is not the referenced number. The
 difference is `obs`, `var`, `uns` and `layers`, which no reference covers.
@@ -87,7 +105,7 @@ fix. `SpatialData.write_element` still raises on a store without a path.
 Two limits shape everything else here.
 
 - SpatialData support depends on an unmerged pull request plus five commits on a fork. No
-  SpatialData path reproduces with released packages alone.
+  SpatialData write path reproduces with released packages alone.
 - Arraylake has no anonymous read, so five notebooks ship as committed outputs. A reader
   without an account sees every value those runs produced, and cannot repeat them.
 
@@ -122,10 +140,10 @@ The carried limits, each with the mechanism that causes it.
   dataset an empty manifest. `pixi run check-s3` asserts that the arrays hold a nonzero value,
   because nothing else would catch this.
 
-One disclosure about a committed output. In `notebooks/virtualize_braun.ipynb`, one label of
-the final cell was corrected after the run. It read "source bytes referenced" and now reads
-"source file bytes", because the first wording was false. No value changed. That notebook
-needs an Arraylake account, so a re-run could not produce the corrected label.
+One disclosure about a committed output. We corrected one label of the final cell of
+`notebooks/virtualize_braun.ipynb` after the run. It read "source bytes referenced" and now
+reads "source file bytes", because the first wording was false. We changed no value. That
+notebook needs an Arraylake account, so a re-run could not produce the corrected label.
 
 ## Reproducing
 
@@ -200,7 +218,8 @@ scale omic analysis". The authors are Alexander Holly, Christian La France and A
 Chander.
 
 - [DataScales](https://github.com/aifimmunology/DataScales) is the code behind that poster.
-- [annizarr](https://github.com/A-Jolly-Holly/annizarr) writes AnnData to Zarr and Icechunk.
+- DataScales lists [annizarr](https://github.com/A-Jolly-Holly/annizarr) among its own tools.
+  annizarr writes AnnData to Zarr and Icechunk.
 
 The two approaches are complementary. annizarr writes data that the reader owns. This
 repository references data that the reader does not own.

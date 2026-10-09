@@ -46,8 +46,9 @@ The path must be absolute, because `nbconvert` runs its kernel in the notebook d
 
 ## What changes without it
 
-Without `PYTHONPATH`, `extension-test` skips 14 tests. With it, the same run gives 27 passed and
-6 skipped.
+Without `PYTHONPATH`, 14 of those tests skip, and `extension-test` gives 17 passed and 16
+skipped. The other two skips need optional packages. With `PYTHONPATH`, the same run gives
+27 passed and 6 skipped.
 
 Five notebooks need the fork. `spatialdata_on_icechunk` stops at an explicit check.
 `atera_from_arraylake`, `squidpy_xenium_virtual` and `xenium_tutorial_virtual` call
