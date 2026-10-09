@@ -46,7 +46,7 @@ The path must be absolute, because `nbconvert` runs its kernel in the notebook d
 
 ## What changes without it
 
-Without `PYTHONPATH`, `spike-test` skips 14 tests. With it, the same run gives 27 passed and
+Without `PYTHONPATH`, `extension-test` skips 14 tests. With it, the same run gives 27 passed and
 6 skipped.
 
 Five notebooks need the fork. `spatialdata_on_icechunk` stops at an explicit check.

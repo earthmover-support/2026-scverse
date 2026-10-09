@@ -66,11 +66,11 @@ for gate in check_paths check_docstrings check_notices check_readme check_tasks 
   run pixi run --frozen python "tools/${gate}.py"
 done
 
-echo "=== pixi run -e spatial spike-test"
-test_out=$(pixi run -e spatial --frozen spike-test 2>&1)
+echo "=== pixi run -e spatial extension-test"
+test_out=$(pixi run -e spatial --frozen extension-test 2>&1)
 status=$?
 echo "$test_out"
-if [ "$status" -ne 0 ]; then echo "FAILED: pixi run -e spatial spike-test"; fail=1; fi
+if [ "$status" -ne 0 ]; then echo "FAILED: pixi run -e spatial extension-test"; fail=1; fi
 # Several tests need the fork on PYTHONPATH and skip without it. See docs/fork-pin.md.
 test_skips=$(echo "$test_out" | sed -n 's/.*[^0-9]\([0-9][0-9]*\) skipped.*/\1/p' | tail -1)
 

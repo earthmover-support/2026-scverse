@@ -108,7 +108,7 @@ for feat in m.get("feature", {}).values():
 expected = {"lab","check","check-s3","check-concat","check-icechunk",
  "check-manifest","check-sparsity","check-tenx","check-store-path",
  "equivalence","equivalence-run","versioning","versioning-run",
- "notebook","notebook-run","spatialdata","spatialdata-run","sdpr","spike-test"}
+ "notebook","notebook-run","spatialdata","spatialdata-run","sdpr","extension-test"}
 if tasks != expected:
     print("TASKS extra:", sorted(tasks-expected), "missing:", sorted(expected-tasks))
     sys.exit(1)

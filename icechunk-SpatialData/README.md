@@ -3,7 +3,7 @@
 **Status: the measurements are complete, and a prototype followed them.** They concluded "do not
 ship a package". The prototype exists anyway, because it makes the upstream conversation
 concrete. The ask is [`UPSTREAM.md`](UPSTREAM.md). The prototype is
-[`icechunk_spatialdata/`](icechunk_spatialdata), with `pixi run -e spatial spike-test`.
+[`icechunk_spatialdata/`](icechunk_spatialdata), with `pixi run -e spatial extension-test`.
 
 **Four measurements, below.** This work re-checked all four against
 [PR #1107](https://github.com/scverse/spatialdata/pull/1107)'s branch. That branch changes the
@@ -807,7 +807,7 @@ icechunk-SpatialData/
   pyproject.toml
   icechunk_spatialdata/            the prototype: parquet_in_store, transaction, references
   upstream/                        the five commits, their rationale and their verifiers
-  tests/test_roundtrip.py          pixi run -e spatial spike-test
+  tests/test_roundtrip.py          pixi run -e spatial extension-test
 ```
 
 The prototype implements the API that the hackathon report proposes: `transaction()`, plus

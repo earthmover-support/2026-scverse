@@ -1,7 +1,9 @@
-"""Assert the README carries the ledger, the limits, the scope and the account split.
+"""Assert the README carries the ledger, the upstream ask, the limits and the three tracks.
 
-It also asserts that the design document quotes the same test count as the README. The two
-drifted apart once, because nothing compared them.
+Every required phrase is a claim a run supports, or a command that reproduces one. The banned
+patterns are corrections this repository already made. A pattern stops the old wording from
+returning quietly: 11.95 GB called "referenced", and `parquet_fs_and_path` blamed for the
+released-package failure. Released spatialdata fails earlier, at `store.root`.
 """
 
 import pathlib
@@ -11,33 +13,50 @@ import tomllib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 README = (ROOT / "README.md").read_text()
-DESIGN = ROOT / "docs" / "zarr-soma" / "README.md"
 
 REQUIRED_SECTIONS = [
     "## What this repository claims",
     "## What this repository does not claim",
-    "## Scope",
-    "## Icechunk and Arraylake",
+    "## The upstream ask",
     "## Reproducing",
 ]
 REQUIRED_PHRASES = [
-    "Every SOMA backend we found is TileDB-backed",
-    "pixi run test",
-    "pixi run compare-public-run",
     "pixi run check-s3",
-    "pixi run compare-spatial-run",
-    "pixi run merfish-run",
+    "pixi run check-tenx",
+    "pixi run check-sparsity",
+    "pixi run check-store-path",
+    "pixi run equivalence-run",
+    "pixi run -e spatial versioning-run",
+    "pixi run -e spatial extension-test",
+    "pull request #1107",
+    "feat/zarr-store-class...li-em:spatialdata:li-em/store-without-a-path",
     "Arraylake has no anonymous read",
-    "Icechunk on S3 needs no account",
-    "CELLxGENE Discover holds no Xenium dataset",
+    # The measured Braun figures, and the two calls that produce them.
+    "repo.chunk_storage_stats()",
+    "repo.list_manifest_files()",
+    "11.31 GB",
+    "at least 35 MB",
+    # Another group's measurement, which must stay attributed.
+    "DataScales",
 ]
-# The last seven are claims that measurement refuted. They must not come back.
+# The last five are claims that measurement refuted, or names that stay out of this tree.
 BANNED = [
     "—", "TBD", "TODO", "virtual_omics", "<N>", "<LIST HERE", "<IF the",
     "ZEP003", "ZEP0003", "supersedes", "grows at most linearly",
     "works on Linux", "tested on Linux", "172 tests",
-    "first SOMA implementation that is not TileDB",
+    "seam", "compare/main...", "SOMA", "tiledbsoma", "somacore",
 ]
+# A stale claim that a nearby word makes false. Each pattern stays inside one sentence.
+BANNED_PATTERNS = [
+    (r"referenc\w*[^.]{0,160}11\.95\s*GB", "11.95 GB called referenced"),
+    (r"11\.95\s*GB[^.]{0,160}referenc", "11.95 GB called referenced"),
+    (r"releas\w*[^.]{0,200}parquet_fs_and_path", "parquet_fs_and_path cited for released"),
+    (r"parquet_fs_and_path[^.]{0,200}releas", "parquet_fs_and_path cited for released"),
+    (r"0\.8\.0[^.]{0,200}parquet_fs_and_path", "parquet_fs_and_path cited for released"),
+]
+# A truncated or emptied README would pass every other rule. Fail instead.
+MINIMUM_WORDS = 900
+MINIMUM_CLAIM_ROWS = 8
 
 
 def over_long(text):
@@ -61,6 +80,13 @@ def chunks(body):
     return ["\n".join(prose)] + cells
 
 
+def claim_rows():
+    """Count the data rows of the table under the claims heading."""
+    section = README.split("## What this repository claims", 1)[-1].split("\n## ", 1)[0]
+    rows = [ln for ln in section.splitlines() if ln.lstrip().startswith("|")]
+    return max(0, len([r for r in rows if set(r.strip()) - set("|-: ")]) - 1)
+
+
 def main():
     bad = []
     for s in REQUIRED_SECTIONS:
@@ -72,6 +98,16 @@ def main():
     for s in BANNED:
         if s in README:
             bad.append(f"banned string present: {s}")
+    for pattern, why in BANNED_PATTERNS:
+        for m in re.finditer(pattern, README, flags=re.S):
+            bad.append(f"banned claim ({why}): {' '.join(m.group(0).split())[:90]}")
+
+    words = len(README.split())
+    if words < MINIMUM_WORDS:
+        bad.append(f"README holds {words} words, floor {MINIMUM_WORDS}")
+    rows = claim_rows()
+    if rows < MINIMUM_CLAIM_ROWS:
+        bad.append(f"the claims table holds {rows} rows, floor {MINIMUM_CLAIM_ROWS}")
 
     # Every pixi task the README names must exist in the manifest.
     manifest = tomllib.loads((ROOT / "pixi.toml").read_text())
@@ -81,18 +117,6 @@ def main():
     for task in set(re.findall(r"pixi run (?:-e \w+ )?([A-Za-z0-9-]+)", README)):
         if task not in known:
             bad.append(f"README names unknown task: {task}")
-
-    # The design document's phase table counts tests per phase, so the earlier rows hold
-    # smaller numbers. Its largest count is the current suite, and must match the ledger.
-    match = re.search(r"(\d+) collected", README)
-    cited = [int(n) for n in re.findall(r"(\d+) tests", DESIGN.read_text())]
-    if match is None:
-        bad.append("README states no collected test count")
-    elif not cited:
-        bad.append("docs/zarr-soma/README.md states no test count")
-    elif max(cited) != int(match.group(1)):
-        bad.append(f"docs/zarr-soma/README.md says {max(cited)} tests, "
-                   f"README says {match.group(1)} collected")
 
     # Sentence length, the STE limit. Table cells count as prose.
     body = re.sub(r"```.*?```", "", README, flags=re.S)
@@ -105,7 +129,7 @@ def main():
         for line in bad:
             print(" ", line)
         return 1
-    print("README OK (1 file)")
+    print(f"README OK ({words} words, {rows} claim rows)")
     return 0
 
 sys.exit(main())
