@@ -112,6 +112,9 @@ try:
     edit.write_element("table", overwrite=True)
 except ValueError as exc:
     print(f"ValueError: {exc}")
+else:
+    print("THE LIMIT IS GONE: write_element succeeded on a store with no path.")
+    print("Update icechunk-SpatialData/UPSTREAM.md, which still records the limit.")
 """)
 
 md("""
