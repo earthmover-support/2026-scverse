@@ -26,7 +26,7 @@ Icechunk can add two things:
 them and the notes for upstream. This notebook is the demonstration.
 
 > **This notebook runs against [PR #1107](https://github.com/scverse/spatialdata/pull/1107) with the
-> the five commits that `icechunk-SpatialData/upstream/` documents.** The released 0.8.0 cannot write to a
+> five commits that `icechunk-SpatialData/upstream/` documents.** The released 0.8.0 cannot write to a
 > store. `pixi run -e spatial sdpr` produces the checkout. The next cell prints the location that
 > Python loaded SpatialData from:
 >

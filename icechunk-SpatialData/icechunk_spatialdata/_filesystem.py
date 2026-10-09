@@ -66,8 +66,8 @@ def _store_module():
         ) from exc
     if not hasattr(store_module, "parquet_fs_fallback"):
         raise RuntimeError(
-            "this spatialdata has no `parquet_fs_fallback`; use the pinned PR #1107 checkout; ../upstream/ documents its commits "
-            "(`pixi run -e spatial sdpr` fetches it)"
+            "this spatialdata has no `parquet_fs_fallback`; put the pinned fork on PYTHONPATH "
+            "(`pixi run -e spatial sdpr` fetches it); see docs/fork-pin.md"
         )
     return store_module
 
@@ -86,7 +86,7 @@ def parquet_in_store():
         sdata.write(session.store)
     ```
 
-    This function needs the fallback from the patch series in `../upstream/`. See `available`.
+    This function needs `parquet_fs_fallback`, which only the pinned fork has. See `available`.
     """
     store_module = _store_module()
 
@@ -106,7 +106,7 @@ def parquet_in_store():
 
 
 def available() -> bool:
-    """Check if the installed SpatialData has `parquet_fs_fallback` (PR #1107 plus ../upstream/)."""
+    """Check if the installed SpatialData has `parquet_fs_fallback`, which the pinned fork adds."""
     if importlib.util.find_spec("spatialdata._store") is None:
         return False
     from spatialdata import _store
