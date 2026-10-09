@@ -355,7 +355,7 @@ for s in repo.ancestry(branch="main"):
 """)
 
 code("""
-print(f"source bytes referenced : {sum(c.n_bytes for c in braun.CLASSES)/1e9:>8.2f} GB")
+print(f"source file bytes       : {sum(c.n_bytes for c in braun.CLASSES)/1e9:>8.2f} GB")
 print(f"expression bytes stored : {0:>8.2f} GB")
 print(f"cells addressable       : {sum(c.n_cells for c in braun.CLASSES):>11,}")
 print(f"virtual references      : {len(locations):>11,}")

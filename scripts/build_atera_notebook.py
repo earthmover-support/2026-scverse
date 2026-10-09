@@ -1,17 +1,26 @@
 """Generate atera_from_arraylake.ipynb.
 
-Run: pixi run atera        (regenerate)
-     pixi run atera-run    (regenerate, then execute)
+This repository defines no pixi task for the notebook. Regenerate it with
+`python scripts/build_atera_notebook.py`, from the `spatial` environment.
 
-This notebook reads the store that scripts/upload_atera_arraylake.py writes. That script builds
-earthmover-demos/atera-cervical-virtual out of one 89 GB object. This notebook opens the store and
-works with it. The store matters only if that part feels ordinary.
+Executing it needs an Arraylake account, so the committed outputs ship executed.
 
-Execute the notebook against the PR #1107 branch, as with the other store notebooks.
+The notebook reads earthmover-demos/atera-cervical-virtual, which one 89 GB object backs. It
+opens the store and works with it. The store matters only if that part feels ordinary.
+
+An execution needs the PR #1107 branch on PYTHONPATH, as with the other store notebooks.
 `pixi run -e spatial sdpr` puts that branch in `vendor/`.
 """
 
 from _notebook import code, md, write
+
+md("""
+> **This notebook needs an Arraylake account.** It reads the Arraylake repository
+> `earthmover-demos/atera-cervical-virtual`, and Arraylake has no anonymous read. The committed
+> run opened one published 89 GB `outs.zip` through 47,599 element byte ranges, and read a
+> table of 717,576 cells by 27,105 features. The outputs below ship executed. A reader without
+> an account sees every value this run produced.
+""")
 
 DATASET = "https://www.10xgenomics.com/datasets/atera-wta-ffpe-human-cervical-cancer"
 

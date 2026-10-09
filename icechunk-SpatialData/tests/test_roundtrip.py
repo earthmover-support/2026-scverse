@@ -968,8 +968,8 @@ def test_a_zipped_zarr_store_becomes_a_labels_element(http_referencing_repo, tmp
 def test_every_exported_name_resolves():
     """`__all__` and the module agree.
 
-    The deletion of `_plotting.py` removed its import. It left `dtype_argument_is_stale` in
-    `__all__`. In that state, `from icechunk_spatialdata import *` raises for a name that no
+    The deletion of a plotting workaround module removed its import. It left
+    `dtype_argument_is_stale` in `__all__`. In that state, `from icechunk_spatialdata import *` raises for a name that no
     module provides. The design moves modules out of this package.
     So the test checks the list, and nobody has to remember it.
     """
@@ -984,7 +984,7 @@ def test_the_point_renderer_runs_unpatched():
 
     spatialdata-plot 0.4.0 passed `dtype=` to `AnnData`. anndata had removed that argument.
     So this call raised on SpatialData's own `blobs()`.
-    0.4.1 builds no `AnnData`, and `_plotting.py` does not exist.
+    0.4.1 builds no `AnnData`, and the workaround module is gone.
     If an environment installs 0.4.0 again, this test fails where the notebooks would fail.
     """
     import tempfile

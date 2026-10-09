@@ -292,74 +292,9 @@ def read_obs(class_file, directory=None, columns=("development_stage", "Age")):
     return {name: elements[f"obs/{name}"] for name in columns}
 
 
-def run_side(script, *args):
-    """Run one of scripts/*_side.py in the isolated census environment, and read its JSON.
-
-    One interpreter cannot import both SOMA implementations.
-    Thus the tiledbsoma half of each comparison runs in a separate process.
-    That process writes its result on its last stdout line.
-
-    A Jupyter kernel sets MPLBACKEND to matplotlib_inline.
-    The census environment does not have matplotlib_inline.
-    Without an override, the child fails in the scanpy import of matplotlib.
-    That failure is not related to SOMA.
-    """
-    import json
-    import os
-    import pathlib
-    import subprocess
-
-    root = pathlib.Path(__file__).parent
-    completed = subprocess.run(
-        ["pixi", "run", "-e", "census", "python", str(root / "scripts" / script), *args],
-        capture_output=True, text=True, cwd=str(root),
-        env={**os.environ, "MPLBACKEND": "Agg"},
-    )
-    if completed.returncode != 0:
-        print("the tiledbsoma side failed, exit", completed.returncode)
-        print("stdout:", completed.stdout[-2000:])
-        print("stderr:", completed.stderr[-3000:])
-        raise RuntimeError("see output above")
-    return json.loads(completed.stdout.strip().splitlines()[-1])
-
-
 def directory_size(path):
     """Total bytes of every file under a directory."""
     import os
 
     return sum(os.path.getsize(os.path.join(d, f))
                for d, _, fs in os.walk(path) for f in fs)
-
-
-def report_checks(checks):
-    """Print one line per named check, as a pair of values from the two backends."""
-    for label, (mine, theirs) in checks.items():
-        mark = "same" if mine == theirs else "DIFFER"
-        fmt = (lambda v: f"{v:>18,}") if isinstance(mine, int) else (lambda v: f"{str(v):>18}")
-        print(f"  {label:22s} zarr-SOMA {fmt(mine)}   tiledbsoma {fmt(theirs)}   {mark}")
-
-
-def report_agreement(hvg, other_hvg, dispersions, other_dispersions):
-    """Print how far the two backends' highly variable genes and dispersions agree."""
-    import numpy as np
-
-    overlap = len(set(hvg) & set(other_hvg))
-    union = len(set(hvg) | set(other_hvg))
-    print(f"  highly variable genes: {len(hvg)} vs {len(other_hvg)}, "
-          f"{overlap} shared (Jaccard {overlap / union:.4f})")
-    finite = np.isfinite(dispersions) & np.isfinite(other_dispersions)
-    print("  normalised dispersion correlation: "
-          f"{np.corrcoef(dispersions[finite], other_dispersions[finite])[0, 1]:.6f}")
-
-
-def report_table(rows, ratio=False):
-    """Print (label, zarr-SOMA value, tiledbsoma value) rows, with an optional ratio.
-    The ratio has no meaning when one side stores nothing."""
-    width = 26 if ratio else 30
-    header = f"{'':{width}s} {'zarr-SOMA':>12s} {'tiledbsoma':>12s}"
-    print(header + (f" {'ratio':>8s}" if ratio else ""))
-    for label, mine, theirs in rows:
-        line = f"{label:{width}s} {mine:>12.2f} {theirs:>12.2f}"
-        if ratio:
-            line += f" {(mine / theirs if theirs else float('nan')):>7.2f}x"
-        print(line)

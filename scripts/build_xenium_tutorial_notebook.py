@@ -1,16 +1,14 @@
 """Generate xenium_tutorial_virtual.ipynb.
 
-Run: pixi run xenium-tutorial        (regenerate)
-     pixi run xenium-tutorial-run    (regenerate, then execute)
+This repository defines no pixi task for the notebook. Regenerate it with
+`python scripts/build_xenium_tutorial_notebook.py`, from the `spatial` environment.
 
-Both need PR #1107 on the path, for the shapes elements:
+Executing it needs an Arraylake account, so the committed outputs ship executed. It also needs
+PR #1107 on PYTHONPATH, for the shapes elements.
 
-    PYTHONPATH=$PWD/vendor/spatialdata-1107/src pixi run -e spatial jupyter nbconvert --to notebook \
-        --execute --inplace --ExecutePreprocessor.timeout=3600 \
-        notebooks/xenium_tutorial_virtual.ipynb
-
-The notebook replaces scverse's `technology_xenium.ipynb`. It reads the store that
-`upload_xenium_lung_arraylake.py` builds. Its markdown and its calls are theirs, near-verbatim.
+The notebook replaces scverse's `technology_xenium.ipynb`. It reads
+`earthmover-demos/xenium-lung-virtual`, whose build script stays outside this repository. Its
+markdown and its calls are theirs, near-verbatim.
 Only the loading cell changes. That cell opens an Arraylake repository that holds almost none of the
 data. The scverse notebook opens a converted local `.zarr` instead.
 
@@ -25,6 +23,14 @@ checksum against a ranged body failed every tile. See
 """
 
 from _notebook import code, md, write
+
+md("""
+> **This notebook needs an Arraylake account.** It reads the Arraylake repository
+> `earthmover-demos/xenium-lung-virtual`, and Arraylake has no anonymous read. The committed run
+> loaded seven elements from that repository and plotted them, and it concatenated 12 referenced
+> transcript tiles into 190,077 transcripts. The outputs below ship executed. A reader without
+> an account sees every figure this run produced.
+""")
 
 TUTORIAL = ("https://spatialdata.scverse.org/en/stable/tutorials/notebooks/notebooks/"
             "examples/technology_xenium.html")

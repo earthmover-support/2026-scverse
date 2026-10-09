@@ -5,9 +5,11 @@ import pathlib
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-NOTICED = ["virtualize_braun.ipynb"]
-ANON = ["compare_backends_object_store.ipynb", "compare_backends_public_s3.ipynb",
-        "compare_backends_spatial.ipynb", "merfish_scene.ipynb"]
+NOTICED = ["virtualize_braun.ipynb", "xenium_tutorial_virtual.ipynb",
+           "squidpy_xenium_virtual.ipynb", "xenium_from_arraylake.ipynb",
+           "atera_from_arraylake.ipynb"]
+ANON = ["spatialdata_on_icechunk.ipynb", "scanpy_equivalence.ipynb",
+        "spatialdata_versioning.ipynb"]
 NEEDLE = "This notebook needs an Arraylake account."
 
 def first_markdown(nb):

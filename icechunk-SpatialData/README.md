@@ -1,37 +1,37 @@
-# icechunk-SpatialData: a spike plan
+# icechunk-SpatialData: what Icechunk adds to SpatialData
 
-**Status: the spikes are complete, and a prototype followed them.** The spikes concluded "don't
-ship a package". The prototype exists anyway, because it makes the upstream conversation concrete.
-The ask is [`UPSTREAM.md`](UPSTREAM.md). The prototype is
-[`icechunk_spatialdata/`](icechunk_spatialdata), with `pixi run spike-test` (56 tests).
+**Status: the measurements are complete, and a prototype followed them.** They concluded "do not
+ship a package". The prototype exists anyway, because it makes the upstream conversation
+concrete. The ask is [`UPSTREAM.md`](UPSTREAM.md). The prototype is
+[`icechunk_spatialdata/`](icechunk_spatialdata), with `pixi run -e spatial spike-test`.
 
-**S1, S3, S4 and S5 as measured, below.** This project re-checked all four against
+**Four measurements, below.** This work re-checked all four against
 [PR #1107](https://github.com/scverse/spatialdata/pull/1107)'s branch. That branch changes the
 diagnostics substantially. It does not change the conclusions. See
-[re-checked against #1107](#re-checked-against-pr-1107).
-The commands are `pixi run spike-s1` / `spike-s3` / `spike-s4`. The sources are under
-[`spikes/`](spikes). The results are in [S1](#s1-as-measured), [S3](#s3-as-measured),
-[S4](#s4-as-measured) and [S5](#s5-as-measured). See [the conclusion](#conclusion).
+[re-checked against #1107](#re-checked-against-pr-1107). The results are in
+[the store test](#the-store-test), [the geometry test](#the-geometry-test),
+[the image test](#the-image-test) and [the prior-art review](#the-prior-art-review). See
+[the conclusion](#conclusion).
 
 The short version:
 
 * **Versioning works** for rasters and tables. It is also SpatialData's own plan, and SpatialData
-  scoped it in more detail than this spike reached.
+  scoped it in more detail than this work reached.
 * **Geometry** can join the transaction only as Zarr arrays. That costs no bytes, but it forfeits
   interoperability.
 * **References work today for OME-Zarr sources.** They need nothing built, and nobody in this
   ecosystem claims them.
 * **References to OME-TIFF** had exactly one missing piece: a Zarr v3 JPEG 2000 codec. The reason
-  that this plan first gave was not the blocker. That piece exists. The images become references
-  through `virtual-tiff`, which supplies the codec with thirteen other compressions.
+  first given here was not the blocker. That piece exists. The images become references through
+  `virtual-tiff`, which supplies the codec with thirteen other compressions.
 
-This project established the facts below on 2026-08-04. The versions were `spatialdata` 0.8.0 /
+The facts below were established on 2026-08-04. The versions were `spatialdata` 0.8.0 /
 `spatialdata-io` 0.7.0 and `virtualizarr` 2.7.1 / `icechunk` 2.1.2. Each fact says how.
 
 ## The question
 
-SpatialData is already Zarr-based and already NGFF-aligned. It also has a richer coordinate
-transformation set than SOMA. So the question is narrow:
+SpatialData is already Zarr-based and already NGFF-aligned. It also has a rich coordinate
+transformation model. So the question is narrow:
 
 > Does putting a SpatialData store on Icechunk add anything SpatialData does not already have, or
 > is not already building?
@@ -43,20 +43,8 @@ Two candidate contributions:
 2. **Virtual chunk references.** These present a spatial dataset over files that nobody can write
    to, and they copy nothing.
 
-SpatialData already does everything else better. The spike exists to find out whether either of
-those two contributions holds. If neither holds, the spike stops early.
-
-## Why this is separate from `zarr-SOMA`
-
-* **Different contract.** SOMA is an abstract specification. Its extension mechanism is
-  structural typing against `runtime_checkable` Protocols, so a backend *conforms*. SpatialData is
-  a Python library with an on-disk format, and it has no protocol surface to implement. The work
-  here is not "implement the model in Zarr". It is "back an existing format with a different
-  store". That work mostly belongs upstream.
-* **Different consumer.** zarr-SOMA serves scanpy. SpatialData serves squidpy and napari.
-* **Different dependency weight.** SpatialData needs geopandas, shapely, dask and xarray.
-  `zarr-SOMA` deliberately depends on none of them, and it should not add them.
-* **Different failure modes.** The plan below is about these.
+SpatialData already does everything else better. The question is whether either of those two
+contributions holds.
 
 ## What is already established
 
@@ -69,23 +57,22 @@ those two contributions holds. If neither holds, the spike stops early.
 | 5 | `.root` exists **only** on `LocalStore`. The measurement: `LocalStore` yes, `FsspecStore` no, `IcechunkStore` no. So shapes and points are local-filesystem-only today. SpatialData cannot write them to S3, and it cannot write them to Icechunk. | measured |
 | 6 | An extension point does exist: `_resolve_zarr_store` accepts `str \| Path \| UPath \| zarr.storage.StoreLike \| zarr.Group`. | `_io/_utils.py:460` |
 | 7 | `spatialdata/_io` does not mention `icechunk` anywhere. | grep |
-| 8 | VirtualiZarr has no TIFF parser. Its parsers are DMRPP, FITS, HDF4, HDF5, Icechunk, KerchunkJSON, KerchunkParquet, NetCDF3 and Zarr. Xenium morphology images are OME-TIFF. **Two later findings correct this fact.** The missing parser is real, but it is not the obstacle. Format parsers are separate packages by design. TIFF's parser is `virtual-tiff`. It also publishes the Zarr v3 JPEG 2000 codec that S4 named as the real blocker. | measured |
-| 9 | SpatialData has a prototype of "lazy file linking" from the 2nd SpatialData Hackathon, June 2026. **S5 resolves this.** The prototype makes soft links to whole files through a JSON-serialized `LazyContainer`. The container defers to the source format's own reader. It does not use chunk-level byte ranges. The same report also scopes an Icechunk integration in detail. | BioHackrXiv, full text |
+| 8 | VirtualiZarr has no TIFF parser. Its parsers are DMRPP, FITS, HDF4, HDF5, Icechunk, KerchunkJSON, KerchunkParquet, NetCDF3 and Zarr. Xenium morphology images are OME-TIFF. **Two later findings correct this fact.** The missing parser is real, but it is not the obstacle. Format parsers are separate packages by design. TIFF's parser is `virtual-tiff`. It also publishes the Zarr v3 JPEG 2000 codec that the image test named as the real blocker. | measured |
+| 9 | SpatialData has a prototype of "lazy file linking" from the 2nd SpatialData Hackathon, June 2026. **The prior-art review resolves this.** The prototype makes soft links to whole files through a JSON-serialized `LazyContainer`. The container defers to the source format's own reader. It does not use chunk-level byte ranges. The same report also scopes an Icechunk integration in detail. | BioHackrXiv, full text |
 
-Fact 5 shapes everything. It also connects to a finding in
-[`../docs/zarr-soma/README.md`](../docs/zarr-soma/README.md). NGFF PR #64 tried to standardise
+Fact 5 shapes everything. It also connects to NGFF PR #64, which tried to standardise
 tables in Zarr. It failed because reviewers argued for Parquet instead: *"which is what SpatialData
 does"*. That choice is exactly what stops a transactional Zarr store from holding a SpatialData
 store. Parquet gave better tabular performance and cost versionability. Nobody appears to have
 written that down.
 
-## S1 as measured
+## The store test
 
-The command is `pixi run spike-s1`. It uses `spatialdata.datasets.blobs()` and not a real Xenium
-bundle, by design. S1 asks about the *store*. A synthetic dataset with one of every element type
+It uses `spatialdata.datasets.blobs()` and not a real Xenium bundle, by design. It asks about
+the *store*. A synthetic dataset with one of every element type
 answers that question in seconds, not in gigabytes. Ingest is a different question.
 
-**S1a: the public API rejects a store, with an explicit check.**
+**(a) The public API rejects a store, with an explicit check.**
 
 ```
 ValueError: file_path must be a string or a Path object,
@@ -96,7 +83,7 @@ ValueError: file_path must be a string or a Path object,
 `_resolve_zarr_store`. So the public API cannot reach the extension point at fact 6. The check is
 a type check, not an architectural one.
 
-**S1b: the element writers work, and versioning works too.** The spike creates the root group on
+**(b) The element writers work, and versioning works too.** The test creates the root group on
 an Icechunk session store. Then it calls SpatialData's own `write_image` / `write_labels` /
 `write_table` against groups on that store. That succeeds for every raster and table element:
 
@@ -108,12 +95,12 @@ an Icechunk session store. Then it calls SpatialData's own `write_image` / `writ
 | `blobs_multiscale_labels` | `(512, 512)` identical, scales `['s0', 's1', 's2']` |
 | `table` | AnnData-in-Zarr, `X` with 78 stored values, `obs`/`obsm`/`layers` all present |
 
-The spike committed all of it and read it back from the snapshot. Each element matched the
+The test committed all of it and read it back from the snapshot. Each element matched the
 in-memory source. A second commit adds an attribute and leaves the first snapshot unchanged. So
-**S1 already answers S2's question: versioning works.** Transformations and metadata are Zarr
+**the store test already answers the versioning question.** Transformations and metadata are Zarr
 attributes (fact 2), and Icechunk versions those natively.
 
-The writers are not uniform. The plan had these details wrong:
+The writers are not uniform, in three ways:
 
 * Scales are `s0`, `s1`, `s2`, *not* `0`, `1`, `2`.
 * `write_labels` takes the **root** group and creates `labels/<name>` itself. `write_image` takes
@@ -121,32 +108,30 @@ The writers are not uniform. The plan had these details wrong:
 * The AnnData table goes entirely inside the Zarr store, `StringDType` arrays included. It is not
   a file beside the store.
 
-The spike also confirmed that SpatialData 0.8.0 writes `zarr_format=3` for every element format.
+The test also confirmed that SpatialData 0.8.0 writes `zarr_format=3` for every element format.
 So Icechunk's v3-only constraint is not a blocker.
 
-**S1c: geometry cannot enter the store, exactly as the plan predicted.**
+**(c) Geometry cannot enter the store.**
 
 ```
 shapes  AttributeError: 'IcechunkStore' object has no attribute 'root'
 points  AttributeError: 'IcechunkStore' object has no attribute 'root'
 ```
 
-### What S1 changes
+### What the store test changes
 
-S1 passed, so the first kill criterion does not fire. But the result is uneven.
+The store test passed. But the result is uneven.
 **An Icechunk-backed SpatialData versions everything except the geometry.** Xenium and CosMx are
 the imaging assays that motivated this work. For them, the geometry is the part that nobody else
-versions. So the whole spike depends on S3.
+versions. So the whole question depends on the geometry test.
 
-This plan's own reasoning needs one correction. It claimed that the SpatialData stack "cannot be
-assumed to co-resolve with this project's pinned `pandas` and `somacore`". It does co-resolve: the
-`spatial` environment resolved to the same `pandas` 3.0.5 as the default one. The isolation is
-still useful, but only for the dependency-weight reason. The resolver reason does not apply.
+The `spatial` pixi environment resolved to the same `pandas` 3.0.5 as the default one. So it is
+isolated for dependency weight alone, and not for a resolver conflict.
 
-## S3 as measured
+## The geometry test
 
-The command is `pixi run spike-s3`. It measures correctness on `blobs()`. It measures cost at scale
-on 10x's published cell boundaries.
+It measures correctness on `blobs()`. It measures cost at scale on 10x's published cell
+boundaries.
 
 **(a) Route Parquet through `store.set()`: impossible on Icechunk.**
 
@@ -166,8 +151,9 @@ three `blobs()` shape elements, and the geometry stays byte-identical:
 * **(b1) blob.** The GeoParquet bytes go into one 1-D `uint8` array. It is exact, trivial and
   opaque.
 * **(b2) native.** WKB goes, concatenated, into a `uint8` values array plus an `int64` offsets
-  array. The attribute columns are their own arrays. `zarr-SOMA` uses the same values-and-offsets
-  shape for sparse data. It is legible with no Parquet reader, and each column chunks independently.
+  array. The attribute columns are their own arrays. This is the same values-and-offsets shape
+  that sparse arrays use. It is legible with no Parquet reader, and each column chunks
+  independently.
 
 At real scale, 2,181,086 vertex rows become 167,780 polygons. The codec is the same for each
 encoding:
@@ -181,7 +167,7 @@ encoding:
 | icechunk, native | 11.4 MB | **0.94×** |
 | 10x's published file, for context | 8.8 MB | |
 
-Two corrections to expectations that this plan stated earlier:
+Two corrections to expectations stated earlier here:
 
 * **The byte argument against (b) fails under measurement.** With the same codec on both sides, the
   values-and-offsets encoding is *marginally smaller* than GeoParquet. The uncompressed WKB figure
@@ -212,11 +198,11 @@ transaction. The byte share understates the problem. That 9.6% is every transcri
 every cell and nucleus boundary. It is all of the geometry. It is also the only thing that Xenium
 has and a Visium slide does not.
 
-The same table also shows a fact for S4: **90.2% of the bundle is OME-TIFF**. Fact 8 says that
+The same table also shows a fact for the image test: **90.2% of the bundle is OME-TIFF**. Fact 8 says that
 VirtualiZarr cannot make references to TIFF. So an Icechunk-backed SpatialData of this dataset
 needs a conversion of 6.46 GB of images. That conversion is a copy, and the goal is no copy.
 
-### What S3 decides
+### What the geometry test decides
 
 Ranked by the measurements:
 
@@ -224,23 +210,22 @@ Ranked by the measurements:
    is also free in bytes. Its cost: no existing reader understands the result. For a format whose
    value *is* interoperability, that cost alone nearly disqualifies it.
 2. **(a) upstream** has merit on its own. It would make SpatialData's geometry writable to the
-   cloud. SpatialData cannot write geometry to any remote store today. But (a) does not serve this
-   spike.
+   cloud. SpatialData cannot write geometry to any remote store today. But (a) does not serve the
+   question here.
 3. **(c) split** is the only option that keeps the format intact. It gives up versioning for
    exactly the elements that motivated the exercise.
 
 None of the three is good.
 
-## S4 as measured
+## The image test
 
-The command is `pixi run spike-s4`. S3 showed that 90% of a Xenium bundle is OME-TIFF. So
-contribution 2 succeeds or fails here.
+The geometry test showed that 90% of a Xenium bundle is OME-TIFF. So contribution 2 succeeds or
+fails here.
 
 **An OME-Zarr source becomes references natively, with nothing to build.** VirtualiZarr's
 `ZarrParser` turns an existing Zarr hierarchy into chunk references, one per chunk. The read-back
 was identical. So an Icechunk repository can present a *published OME-Zarr pyramid* and copy no
-bytes. This is the strongest case for contribution 2 in the spike. It needs no code from this
-project.
+bytes. This is the strongest case for contribution 2. It needs no code from this repository.
 
 **An OME-TIFF's tiles are valid virtual chunks.** 10x's `morphology_mip.ome.tif` already has
 1024×1024 tiles across 8 pyramid levels, `uint16`. That layout is structurally a Zarr chunk grid.
@@ -250,9 +235,9 @@ Chunk `0/0.0` is 504,157 bytes at offset 11,344. A plain HTTP range request gets
 bytes. `imagecodecs_jpeg2k` decodes them, and the tile is **identical to tifffile's own read**. So
 the references are correct and the bytes are decodable.
 
-**And the blocker was one layer below where this plan looked.** A later finding resolves it: see
-[the codec, found](#the-codec-found). The tiles are JPEG 2000. When this spike measured them, Zarr
-v3 shipped no JPEG 2000 codec. Numcodecs' v2 registry did not supply one to Zarr v3 either.
+**And the blocker was one layer below where this document first looked.** A later finding
+resolves it: see [the codec, found](#the-codec-found). The tiles are JPEG 2000. When the image
+test first ran, Zarr v3 shipped no JPEG 2000 codec. Numcodecs' v2 registry did not supply one to Zarr v3 either.
 Icechunk is Zarr v3 only, so a process could write the references but never read them.
 
 An install of `virtual-tiff` resolves the gap. The package that parses the file also publishes the
@@ -265,10 +250,10 @@ zarr v3 get_codec_class('jpeg2k')                        -> KeyError
 numcodecs v2 registry has it                             -> True
 ```
 
-`pixi run spike-s4` asserts that the first of those resolves. It once asserted the opposite. The
-gap was never a capability, only a name.
+The test asserts that the first of those resolves. It once asserted the opposite. The gap was
+never a capability, only a name.
 
-### What S4 changes
+### What the image test changes
 
 Fact 8 blamed the missing VirtualiZarr TIFF parser. That diagnosis was wrong. The parser gap is
 real, but another route exists. The actual blocker is a single missing codec wrapper. This changes
@@ -279,7 +264,7 @@ It also gives two clear answers to whether OME-Zarr helps:
 
 * **For data already in OME-Zarr:** yes, decisively, and today.
 * **For OME-TIFF:** no, because the conversion *is* the copy. But a reference to the TIFF in place
-  needs only one small codec. That is a much better position than this plan assumed.
+  needs only one small codec. That is a much better position than this document first assumed.
 
 ### The codec, found
 
@@ -294,8 +279,8 @@ working `_decode_single`. The whole fix was one guard per codec, [merged as PR
 #9](https://github.com/awslabs/osml-imagery-io/pull/9).
 
 **Then `virtual-tiff`**, which reads the images. The package that parses the TIFF publishes the
-codec, so decoding needs no separate install. osml is out of the environment entirely. The probe
-and the runtime workaround that it carried are out too.
+codec, so decoding needs no separate install. osml is out of the environment entirely, with the
+runtime workaround that it needed.
 
 That route pinned facts that the first route did not:
 
@@ -341,34 +326,37 @@ different things:
 | cheap full-resolution random access | no | yes |
 | copied bytes | one tail per file | none |
 
-That first row is the real cost. It also conflicts with a rule that this project follows
+That first row is the real cost. It also conflicts with a rule this repository follows
 elsewhere. *Unmodified* `anndata` reads a table's `X`, but this image needs a third-party package.
 It is not a private encoding: a URL-named codec is exactly Zarr v3's extension mechanism. The
 package is Apache 2.0 on PyPI. But "needs a codec installed" is weaker than "needs nothing".
 Arraylake's viewer cannot render the image either. The opaque file keeps the bundle legible
 without the codec.
 
-## S5 as measured
+## The prior-art review
 
-S5 is not code. It is the full hackathon preprint (`doi:10.37044/osf.io/s6bph_v1`, 612 lines of
+This one is not code. It is the full hackathon preprint (`doi:10.37044/osf.io/s6bph_v1`, 612 lines of
 extracted text), plus the pull requests it cites. It gave two findings, and they point in opposite
 directions.
 
-### Contribution 1 is already theirs, with a better scope than this spike reached
+### Contribution 1 is already theirs, with a better scope than this work reached
 
 The report has a section titled *"Submit a PR for using icechunk for incremental IO"*. It names
-Icechunk and identifies the same extension point that S1 found. It also goes further:
+Icechunk and identifies the same extension point that the store test found. It also goes
+further:
 
 > By presenting itself as a standard Zarr V3 store via the `session.store` interface, Icechunk can
 > be integrated into the SpatialData ecosystem. […] To bridge the gap in stateful write lifecycles,
 > we propose two core hooks and a dedicated `spatialdata-icechunk` extension. These include ensuring
 > `spatialdata._io` writers dynamically access the active store and implementing a
-> `ParallelWriteBackend` protocol […] This architecture enables a transaction-based API—exemplified
-> by `with sdi.transaction(sdata):`
+> `ParallelWriteBackend` protocol […]
 
-"Ensuring writers dynamically access the active store" is exactly the S1a failure, the type check
-on `file_path`. They identified it independently, and they attached a design. So S1 is a
-rediscovery, and it is useful only as confirmation.
+The same passage gives `with sdi.transaction(sdata):` as the transaction API that this
+architecture enables.
+
+"Ensuring writers dynamically access the active store" is exactly the store test's failure (a),
+the type check on `file_path`. They identified it independently, and they attached a design. So
+the store test is a rediscovery, and it is useful only as confirmation.
 
 **But none of it exists as code.** `spatialdata-icechunk` appears exactly once in the report and
 nowhere else. GitHub repository search returns 0 results, and PyPI returns 404. Its prerequisite is
@@ -395,7 +383,7 @@ elements to native Zarr" that the Icechunk section assumes. Maybe the intent cha
 PR replaced PR #1087. Or maybe the migration is a separate piece that nobody has started. The
 sources do not say which, and this plan does not guess.
 
-Either way, this **confirms S3 and does not overturn it**. On the current trajectory, geometry
+Either way, this **confirms the geometry test and does not overturn it**. On the current trajectory, geometry
 stays Parquet. So it stays outside any Icechunk transaction.
 
 ### Contribution 2 is not theirs, and is a different mechanism
@@ -416,17 +404,16 @@ Four differences matter:
 | serialization | JSON beside the store | chunk manifests inside it |
 | expected cost | *"would improve ergonomics at a potential performance cost"* (their words) | Zarr-native chunk reads, no reader detour |
 
-Note the third row. A `LazyContainer` serialized to JSON has exactly the problem that S3 hit,
-because Icechunk does not hold a non-Zarr key. Also, `VirtualiZarr` and `kerchunk` appear **zero
+Note the third row. A `LazyContainer` serialized to JSON has exactly the problem the geometry
+test hit, because Icechunk does not hold a non-Zarr key. Also, `VirtualiZarr` and `kerchunk` appear **zero
 times** in the report, and Icechunk appears five times.
 
 So the two mechanisms complement each other and do not compete. Nobody in this ecosystem claims
-byte-range references. The kill criterion is "if lazy file linking covers referencing, contribution
-2 is gone". It **does not fire**.
+byte-range references. Lazy file linking does not cover referencing, so contribution 2 stands.
 
 ## Re-checked against PR #1107
 
-This project ran the spikes first against `spatialdata` 0.8.0. Then it ran them again against
+The four measurements first ran against `spatialdata` 0.8.0. Then they ran again against
 [#1107](https://github.com/scverse/spatialdata/pull/1107) (`selmanozleyen/spatialdata@5443b05`).
 That run made about half of the written diagnostics obsolete. It confirmed the rest:
 
@@ -477,8 +464,8 @@ a public CELLxGENE Visium h5ad: 4,992 × 32,397, 8,990,335 stored values, 1,540 
 whole repository is **0.08 MB**. `anndata.io.read_elem` returns a genuine `csr_matrix`. That is
 not a private encoding. It is a standard AnnData element that holds no bytes of its own.
 
-So this approach can assemble a versioned SpatialData-shaped dataset over somebody else's immutable
-files. That is this project's thesis.
+So this approach can assemble a versioned SpatialData-shaped dataset over somebody else's
+immutable files. That is the thesis here.
 
 ### Three blockers, and only one of them is upstream's
 
@@ -494,7 +481,7 @@ fix needed no Icechunk change and no SpatialData format change.
 
 **3. ~~References cannot transform bytes.~~** **Both halves of this blocker were wrong, and the
 second half stayed wrong for longer.** ~~OME-TIFF images need a Zarr v3 JPEG 2000 codec that does
-not exist (S4).~~ The codec exists: see [the codec, found](#the-codec-found). A reference skips the
+not exist.~~ The codec exists: see [the codec, found](#the-codec-found). A reference skips the
 JP2 wrapper with a later start. ~~And the images inside a Visium h5ad cannot become elements.
 AnnData writes them channel-last, but `Image2DModel` requires `("c", "y", "x")`. A transpose means
 a rewrite of the bytes.~~ **The bytes never needed a transpose.** Zarr v3 has a `transpose` codec
@@ -555,9 +542,8 @@ would then have to handle both. It would also need new conflict semantics. An op
 only be last-write-wins, because nothing can merge two edits to a Parquet file. New reachability
 and garbage-collection rules would follow. It would also shift the positioning from "transactional
 Zarr" to "transactional object store". That shift makes every sidecar format acceptable. An easy
-sidecar path removes the reason to make formats Zarr-native. That last point is the
-[NGFF #64](../docs/zarr-soma/README.md) argument in reverse. It is a product decision, not a
-technical one.
+sidecar path removes the reason to make formats Zarr-native. That last point is the NGFF #64
+argument in reverse. It is a product decision, not a technical one.
 
 **The one real argument to standardise something.** An adapter is a convention that only its users
 share. Two tools that store sidecars as `uint8` arrays with different conventions cannot read each
@@ -642,10 +628,9 @@ a chunk grid, and one tile is one range request. See [the codec, found](#the-cod
 
 ### On Arraylake
 
-The upload is complete. Of the four blockers, three were trivial and none was substantive for this
-dataset. The repository is `earthmover-demos/spatialdata-visium-virtual`.
-[`../scripts/upload_spatialdata_arraylake.py`](../scripts/upload_spatialdata_arraylake.py) builds
-it.
+The upload is complete. Of the four blockers, three were trivial and none was substantive for
+this dataset. The repository is `earthmover-demos/spatialdata-visium-virtual`. The build script
+stays outside this repository, because running it needs an Arraylake account.
 
 It holds a real Visium dataset, 4,992 spots × 32,397 genes. `tables/table` has an `X` of **1,540
 virtual chunk references** into CZI's public h5ad. `shapes/spots` is a materialized copy. The
@@ -655,9 +640,9 @@ whole path: `csr_matrix`, 8,990,335 values, and per-spot totals that match the l
 
 What it needed:
 
-* The three-piece setup from [[arraylake-virtual-chunk-setup]]. `earthmover-demos` already had it
-  from the earlier Braun work. It includes a bucket config for the census bucket with anonymous
-  auth. It also includes a public Virtual Chunk Access Policy over
+* A three-piece Arraylake setup: a bucket config, a container and an organization-level access
+  policy. `earthmover-demos` already had it from the earlier Braun work. It includes a bucket
+  config for the census bucket with anonymous auth. It also includes a public Virtual Chunk Access Policy over
   `s3://cellxgene-census-public-us-west-2/`.
 * `arraylake` in the `spatial` pixi feature. That feature takes no default features, and the
   SpatialData write has to run from there. There was no version conflict.
@@ -687,9 +672,8 @@ A public VCAP over `s3://samples/` completes the setup. With both, references wr
 `s3://samples/xenium/…` resolve to the real URL. Icechunk only ever issues ranged GETs for virtual
 chunks, so nothing needs the S3 semantics that CloudFront lacks.
 
-`earthmover-demos/xenium-virtual-bundle` is the result.
-[`../scripts/upload_xenium_arraylake.py`](../scripts/upload_xenium_arraylake.py) builds it against
-the #1107 branch. **It addresses 1.33 GB across five published files with 313 references. It
+`earthmover-demos/xenium-virtual-bundle` is the result. Its build script runs against the #1107
+branch, and it stays outside this repository. **It addresses 1.33 GB across five published files with 313 references. It
 copies only each file's short tail:**
 
 | | |
@@ -711,8 +695,7 @@ The read-back goes through `client.get_repo`, the call that returns 400 without 
 The repository is older than the JPEG 2000 codec finding, so a fourth commit added
 `images/morphology_mip`. That element holds the same OME-TIFF's pixels as Zarr arrays: **1,237 more
 references and no copied bytes**.
-[`../scripts/add_xenium_image_element.py`](../scripts/add_xenium_image_element.py)
-(`pixi run xenium-al-image`) adds it. A new element is a commit. The three earlier snapshots are
+A separate script adds it. A new element is a commit. The three earlier snapshots are
 unchanged. The script asserts that the first snapshot still does not have the element.
 
 | | |
@@ -722,8 +705,8 @@ unchanged. The script asserts that the first snapshot still does not have the el
 | one full-resolution 1024×1024 tile | one range request |
 
 That last row is what the opaque file cannot do cheaply. It is the whole reason to keep both.
-`upload_xenium_arraylake.py` writes the element itself, so a build from scratch produces the
-complete repository in one pass.
+The build script writes the element itself, so a build from scratch produces the complete
+repository in one pass.
 
 [`../notebooks/xenium_from_arraylake.ipynb`](../notebooks/xenium_from_arraylake.ipynb) is the read
 half. It opens the repository and prunes transcripts with the Parquet footer. Then it pulls two
@@ -766,15 +749,16 @@ three asks. The read path must accept a store. `ome-zarr-py`'s `ZarrLocation` ac
 
 ## Conclusion
 
-The spike is complete. The answer is: do not build a package.
+The measurements are complete. The answer is: do not build a package.
 
 **Contribution 1, versioning: cede it.** SpatialData scoped an Icechunk integration in more detail
-than this spike reached. That scope includes the failure mode that S1 found. A competing
+than this work reached. That scope includes the failure mode the store test found. A competing
 implementation would duplicate work that the format maintainers already designed.
 
 **Contribution 2, references: real, unclaimed, and no longer blocked.** OME-Zarr sources work as
-references natively today. OME-TIFF sources are 90% of a Xenium bundle by bytes (S3). They needed
-a Zarr v3 JPEG 2000 codec. S4 found the codec missing, but `osml-imagery-io` ships one: see
+references natively today. OME-TIFF sources are 90% of a Xenium bundle by bytes. They needed
+a Zarr v3 JPEG 2000 codec. The image test found the codec missing, but `osml-imagery-io` ships
+one: see
 [the codec, found](#the-codec-found). So all of a Xenium bundle works as references: table,
 geometry, transcripts and images. None of it is a SpatialData contribution.
 
@@ -782,96 +766,22 @@ So the result is this write-up plus two narrow findings for upstream:
 
 1. ~~**zarr cannot read through `osml-imagery-io`'s codecs as shipped.**~~ Their numcodecs
    compatibility `decode` shadowed `BaseCodec.decode`. The whole fix was one guard per codec,
-   [merged as PR #9](https://github.com/awslabs/osml-imagery-io/pull/9). This project deleted the
-   patch and its verifier. `virtual-tiff` reads the images, and osml is out of the environment.
+   [merged as PR #9](https://github.com/awslabs/osml-imagery-io/pull/9). The patch and its
+   verifier are gone. `virtual-tiff` reads the images, and osml is out of the environment.
    [`upstream/`](upstream) keeps the shape of the mistake, because the mistake is about
    subclassing, not about that library.
-2. **S3's measurement**, for the geometry question. At Xenium scale, with the same codec, geometry
+2. **The geometry measurement**, for the geometry question. At Xenium scale, with the same codec, geometry
    as Zarr arrays is 11.4 MB against GeoParquet's 12.2 MB. So "native Zarr for shapes and points"
    is not the size regression that a reader might assume.
 
-This project keeps the measurements. Nobody else has written them down:
+This repository keeps the measurements. Nobody else has written them down:
 
 * The writers that work against a store today, and the exact way the public API refuses one.
 * Geometry in Zarr is free in bytes.
 * A JPEG2000-tiled OME-TIFF is a Zarr array of byte ranges, once one codec stops shadowing its own
   read path.
 
-## The spike, cheapest first
-
-Each step has a stop condition. The goal is to stop early on a failure, not to build.
-
-**S1: test whether Icechunk can back a raster-only SpatialData at all. Done, passed.**
-See [S1 as measured](#s1-as-measured). The public `write()` rejects a store on a type check. But
-the element writers work against groups on an Icechunk session. The result commits and
-round-trips.
-
-**S2: test whether versioning works through a full write, commit and read cycle. S1b answered
-it in passing.**
-Two commits: the second adds an attribute, and the first snapshot is unchanged. The rest of S2 is
-narrower, and it is worth doing only with S3. It asks whether a *transformation* in particular
-stays intact through a rewrite and a re-commit. Analysts actually edit that metadata. That test is
-cheap once S3 decides where geometry goes.
-
-**S3: decide what to do about Parquet. Done.** See [S3 as measured](#s3-as-measured). The spike
-tried all three options, and none is good. The three, as the plan first framed them:
-  * *(a) upstream.* Route Parquet writes through the store (`to_parquet` to a buffer, then
-    `store.set()`). This is the cleanest option, but it changes SpatialData. That makes it a
-    contribution there, not a project here. It also changes the on-disk format, so it needs their
-    format versioning.
-  * *(b) blob-in-Zarr.* Write the Parquet bytes as a 1-D `uint8` Zarr array inside the store.
-    Everything stays transactional, and no upstream change is necessary. But only this code can
-    read the store, and that forfeits the interoperability that is SpatialData's whole point.
-  * *(c) split.* Leave Parquet on the filesystem beside the Icechunk repository. This needs no
-    work. But the dataset then versions everything except the geometry. For Xenium the geometry is
-    the interesting part.
-
-**S4: find which elements can become virtual references.** Element by element, for a Xenium
-bundle:
-  * `cell_feature_matrix.h5` → **yes**, and its strings too.
-    [`../probes/tenx_matrix_virtualization.py`](../probes/tenx_matrix_virtualization.py) already
-    measured this.
-  * `transcripts.parquet`, `cell_boundaries.parquet` → **no**. Parquet row groups are not Zarr
-    chunks, and a chunk manifest cannot address them.
-  * `morphology*.ome.tif` → **answered, see [S4](#s4-as-measured)**. `tifffile` does produce
-    loadable references, and [the codec](#the-codec-found) to read them back exists.
-
-  In a Xenium bundle the *largest* elements are the OME-TIFFs and the transcript Parquet. For
-  Xenium in particular, contribution 2 depends on those two. Both work as references: the Parquet
-  as opaque `uint8`, and the images through a JPEG 2000 codec.
-
-**S4: find which elements can become virtual references. Done.** See
-[S4 as measured](#s4-as-measured).
-
-**S5: compare against lazy file linking. Done.** See [S5 as measured](#s5-as-measured). It does not
-make references to foreign files in place. It makes soft links to whole files and defers to their
-native readers. Contribution 2 is not theirs. Contribution 1 is.
-
-## Kill criteria
-
-This plan wrote these criteria before the spike started, so that sunk cost does not make the
-decision:
-
-* ~~**S1 fails** → the answer is upstream in `spatialdata`, not in a project here.~~
-  **Did not fire.** S1 passed for rasters and tables.
-* ~~**S4 shows only the count matrix is referenceable**~~ **Did not fire, with a caveat.**
-  OME-Zarr sources work as references natively. OME-TIFF sources need only one codec wrapper.
-  Contribution 2 survives, but a blocker stops it for 10x data in particular today.
-* ~~**S5 shows lazy file linking covers referencing**~~ **Did not fire.** It makes soft links to
-  whole files, which is a different mechanism. But S5 fired a criterion that the plan had not
-  written down. *Versioning* is already upstream's project, in more detail than this spike
-  reached. Cede it.
-* ~~**S3 concludes that only a change to SpatialData's IO can version geometry**~~
-  **Fired, in a worse form than expected.** A change to SpatialData's IO cannot version geometry
-  either, because Icechunk refuses non-Zarr keys. Only a change to the *format* can, as geometry
-  in Zarr arrays. That change forfeits interoperability. So this directory will become a write-up
-  and not a package, unless S4 makes the second contribution viable.
-* **All remaining steps fail** → write up why, the way [`../findings.md`](../findings.md) does for
-  10x, and stop. In that case, a recorded negative result is the deliverable.
-
 ## Layout
-
-The layout after S1:
 
 A demonstration notebook is with the others:
 [`../notebooks/spatialdata_on_icechunk.ipynb`](../notebooks/spatialdata_on_icechunk.ipynb). It
@@ -880,27 +790,24 @@ point, it demonstrates the geometry fix. Without it, the notebook uses the array
 why.
 
 **The committed outputs come from a run against #1107's branch.** So the geometry section shows
-the real fix and not the fallback. Both runs are clean. `pixi run spatialdata-run` reproduces the
+the real fix and not the fallback. Both runs are clean. `pixi run -e spatial spatialdata-run` reproduces the
 release version. The notebook's header cell reports which version it loaded, so nobody confuses
 the two:
 
 ```shell
 pixi run -e spatial spatialdata-run      # against the 0.8.0 release: fallback path
 pixi run -e spatial sdpr        # clones into vendor/spatialdata-1107, which /tmp cleanup cannot reach
-PYTHONPATH=$PWD/vendor/spatialdata-1107/src pixi run -e spatial jupyter nbconvert --to notebook \
-    --execute --inplace notebooks/spatialdata_on_icechunk.ipynb   # the committed version
+PYTHONPATH=$PWD/vendor/spatialdata-1107/src pixi run -e spatial spatialdata-run   # the committed version
 ```
 
 ```
 icechunk-SpatialData/
-  README.md                        this plan and the spike results
+  README.md                        the measurements and what they decided
   UPSTREAM.md                      the ask, written for a SpatialData maintainer
   pyproject.toml
   icechunk_spatialdata/            the prototype: parquet_in_store, transaction, references
-  spikes/s1_icechunk_store.py      pixi run spike-s1
-  spikes/s3_geometry_options.py    pixi run spike-s3
-  spikes/s4_image_references.py    pixi run spike-s4
-  tests/test_roundtrip.py          pixi run spike-test
+  upstream/                        the five commits, their rationale and their verifiers
+  tests/test_roundtrip.py          pixi run -e spatial spike-test
 ```
 
 The prototype implements the API that the hackathon report proposes: `transaction()`, plus
@@ -913,25 +820,26 @@ passthrough alone is not sufficient. The tests run against a spatialdata without
 upstream fixes any of them, the suite fails, and that failure shows that the document is stale.
 Against the pinned checkout that `pixi run -e spatial sdpr` produces, the tests skip.
 
-The `spatial` pixi feature and environment exist, with `no-default-feature = true`, as `census`
-does. The reason is dependency weight, not a resolver conflict, per the correction above.
+The `spatial` pixi feature and environment exist, with `no-default-feature = true`. The reason is
+dependency weight, not a resolver conflict, per the correction above.
 
 ## Open questions
 
-1. ~~Does a TIFF-to-references path exist that VirtualiZarr can consume?~~ **S4 answered it:**
+1. ~~Does a TIFF-to-references path exist that VirtualiZarr can consume?~~ **The image test
+   answered it:**
    yes, through `tifffile`. ~~Would numcodecs or imagecodecs take a Zarr-v3 JPEG 2000 codec
    wrapper?~~ **No longer relevant: `osml-imagery-io` already has one.** See
    [the codec, found](#the-codec-found). ~~Would AWS Labs take the fix for its `decode`
    shadowing?~~ **They did**, as [PR #9](https://github.com/awslabs/osml-imagery-io/pull/9). Then
    the question no longer applied. `virtual-tiff` reads the images, and its codec comes from
    imagecodecs. osml is out of the environment.
-2. ~~What does "lazy file linking" actually do?~~ **S5 answered it:** soft links to whole files,
-   not byte ranges.
+2. ~~What does "lazy file linking" actually do?~~ **The prior-art review answered it:** soft
+   links to whole files, not byte ranges.
 3. Would upstream accept Parquet writes through the Zarr store, given that the change alters the
    on-disk format?
-4. Does any published benchmark compare GeoParquet shapes against the same geometry as Zarr arrays?
-   The `zarr-SOMA` plan notes that no benchmark compares AnnData-in-Zarr against Parquet either.
-   This looks like the same gap for a different data type.
+4. Does any published benchmark compare GeoParquet shapes against the same geometry as Zarr
+   arrays? No published benchmark compares AnnData-in-Zarr against Parquet either. This looks
+   like the same gap for a different data type.
 
 ## Sources
 

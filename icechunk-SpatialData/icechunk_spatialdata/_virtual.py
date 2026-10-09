@@ -68,7 +68,8 @@ def virtual_table(
     `encoding-type` of `csr_matrix`, which an `.h5ad` carries. `"tenx"` accepts the 10x file
     `cell_feature_matrix.h5`. That file stores the same three arrays under `matrix/` with no
     encoding metadata. Thus the caller must name this layout, and this function does not infer
-    it. `../../findings.md` records the decision not to infer it. With that layout, pass `handle`.
+    it, because an inferred layout would read the wrong axis in silence. With that layout, pass
+    `handle`.
     This function then reads the cell ids and gene names from the file. They are fixed-length
     strings, unlike the strings of an h5ad.
 

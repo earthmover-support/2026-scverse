@@ -6,17 +6,27 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKIP = {".git", ".pixi", "tools", "vendor", "__pycache__"}
-PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:py|md|ipynb|toml|lock))`")
-# Documents outside this repository. The SOMA abstract spec, and somacore's own modules.
+# A leading dot is allowed, so a relative path in backticks is checked like a link target.
+PATH_RE = re.compile(r"`([A-Za-z0-9_.][A-Za-z0-9_./-]*\.(?:py|md|ipynb|toml|lock))`")
+# Paths outside this repository. A name here must belong to a third party's source tree, not to
+# a file this repository ought to carry.
 ALLOW = {
-    "abstract_specification.md",  # the SOMA abstract specification
-    "scene.py",  # somacore module, named at docs/zarr-soma/README.md:376
-    "spatial.py",  # somacore module, named at docs/zarr-soma/README.md:376
-    "coordinates.py",  # somacore module, named at docs/zarr-soma/README.md:376
+    "abstract_specification.md",  # an external abstract specification
+    # spatialdata's own modules, named so a maintainer can find the line under discussion.
+    "_store.py", "spatialdata/_store.py",
+    "_io/_utils.py", "spatialdata/_io/_utils.py",
+    "io_shapes.py", "spatialdata/_io/io_shapes.py",
+    "io_points.py", "io_zarr.py", "_io/io_zarr.py", "_io/io_raster.py",
+    "_core/spatialdata.py",
+    "render.py",  # spatialdata-plot's renderer, cited by line number at 0.4.0
+    # The scverse and squidpy tutorial notebooks that two notebooks here replace.
+    "technology_xenium.ipynb", "tutorial_xenium.ipynb",
+    "tests/test_ome_tiff_microscopy.py",  # virtual-tiff's suite, carried by its PR #107
+    "tests/unit/test_zarr_codecs.py",  # osml-imagery-io's suite, which missed the codec bug
 }
 LINK_RE = re.compile(r"\]\(([^)]+\.(?:py|md|ipynb|toml|lock))\)")
 # The gate walks the whole tree. A floor catches a skip bug that silently narrows the scan.
-MINIMUM_FILES = 20  # Catches a collapsed scan. Task 7 raises it to the final count.
+MINIMUM_FILES = 45  # The tree holds 50 prose files. A collapsed scan falls under this.
 
 def basenames():
     return {p.name for p in ROOT.rglob("*") if p.is_file() and not any(x in SKIP for x in p.relative_to(ROOT).parts)}
@@ -41,7 +51,7 @@ def main():
                 if target.startswith(("http", "s3:")):
                     continue
                 bare = "/" not in target
-                if bare and target in ALLOW:
+                if target in ALLOW:
                     continue
                 candidates = [ROOT / target, p.parent / target]
                 if not any(c.exists() for c in candidates) and not (bare and target in names):

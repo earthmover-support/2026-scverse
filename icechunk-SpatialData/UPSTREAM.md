@@ -8,6 +8,9 @@ documents it as supported. The fifth fixes the repr of an object read from any r
 We verified them against `selmanozleyen/spatialdata@5443b05` (`feat/zarr-store-class`), `zarr`
 3.3.0, `ome-zarr` 0.21.0 and `icechunk` 2.3.0a1.
 
+The five commits sit on one branch. Compare them against #1107's own branch at
+[feat/zarr-store-class...li-em:spatialdata:li-em/store-without-a-path](https://github.com/selmanozleyen/spatialdata/compare/feat/zarr-store-class...li-em:spatialdata:li-em/store-without-a-path?expand=1).
+
 ## What already works
 
 `write_image`, `write_labels` and `write_table` take a `zarr.Group`. They work unmodified on a

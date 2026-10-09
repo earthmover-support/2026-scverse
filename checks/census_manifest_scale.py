@@ -2,21 +2,22 @@
 
 Run: pixi run check-manifest
 
-A materialized Census X["raw"] is three aligned COO columns (soma_dim_0, soma_dim_1, soma_data).
-Take about 2k nonzeros per cell and 1M values per chunk. Mouse (43.6M cells) then needs about 90k
-chunk refs per column. Human (159M cells) needs about 400k. The check `icechunk_many_arrays` measures many
-small arrays. This check measures few arrays with millions of references.
+A materialized CELLxGENE Census X["raw"] holds three aligned COO columns. Take about 2k
+nonzeros per cell and 1M values per chunk. Mouse, at 43.6M cells, then needs about 90k chunk
+references per column. Human, at 159M cells, needs about 400k. The check `icechunk_many_arrays`
+measures many small arrays. This check measures few arrays with millions of references.
 
-The top scale is 12.3M refs per column, about 37M across three columns. It matches the Marson
-perturb-seq cell-level h5ads (s3://genome-scale-tcell-perturb-seq/, 1.6 TiB, 12 files). Their CSR
-X chunks at about 7k elements, which is 23x past human Census scale.
+The top scale is 12.3M references per column, about 37M across three columns. It matches the
+Marson perturb-seq cell-level h5ads (s3://genome-scale-tcell-perturb-seq/, 1.6 TiB, 12 files).
+Their CSR X chunks at about 7k elements, which is 23x past human Census scale.
 
-Chunks are virtual refs into local scratch files. The manifest carries realistic entries, and
-the script writes no data. A native run at the smallest scale calibrates the virtual entry size
-against the materialized one. The script measures append time, commit time, manifest bytes,
-reopen time and a cold random chunk read. It verifies the chunk bytes against the source file. It asserts that manifest bytes per ref at
-the largest scale are under twice the bytes per ref at the smallest. That test does not depend on machine speed.
-The timings are printed and not asserted, because they depend on the machine.
+Chunks are virtual references into local scratch files. The manifest carries realistic entries,
+and the script writes no data. A native run at the smallest scale calibrates the virtual entry
+size against the materialized one. The script measures append time, commit time, manifest
+bytes, reopen time and a cold random chunk read. It verifies the chunk bytes against the source
+file. It asserts that manifest bytes per reference at the largest scale stay under twice the
+value at the smallest scale. That test does not depend on machine speed. The timings are
+printed and not asserted, because they depend on the machine.
 
 Needs no local data.
 """

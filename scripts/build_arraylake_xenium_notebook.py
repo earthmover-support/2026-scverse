@@ -1,22 +1,27 @@
 """Generate xenium_from_arraylake.ipynb.
 
-Run: pixi run xenium-al        (regenerate)
-     pixi run xenium-al-run    (regenerate, then execute)
+This repository defines no pixi task for the notebook. Regenerate it with
+`python scripts/build_arraylake_xenium_notebook.py`, from the `spatial` environment.
+
+Executing it needs an Arraylake account, so the committed outputs ship executed.
 
 The shapes cell uses SpatialData's own reader only with the PR #1107 branch. Otherwise it uses
-the geopandas fallback. To use the branch, execute the notebook as follows (see
-../icechunk-SpatialData/README.md for the clone):
+the geopandas fallback. Put the branch on PYTHONPATH before an execution. See
+../icechunk-SpatialData/README.md for the clone.
 
-    PYTHONPATH=$PWD/vendor/spatialdata-1107/src pixi run -e spatial jupyter nbconvert --to notebook \
-        --execute --inplace --ExecutePreprocessor.timeout=3600 \
-        notebooks/xenium_from_arraylake.ipynb
-
-This notebook is the read side of scripts/upload_xenium_arraylake.py. That script builds
-earthmover-demos/xenium-virtual-bundle. This notebook opens the repo and works with it. This part
-must feel ordinary, or the approach has no value.
+The notebook reads earthmover-demos/xenium-virtual-bundle. It opens the repository and works
+with it. This part must feel ordinary, or the approach has no value.
 """
 
 from _notebook import code, md, write
+
+md("""
+> **This notebook needs an Arraylake account.** It reads the Arraylake repository
+> `earthmover-demos/xenium-virtual-bundle`, and Arraylake has no anonymous read. The committed
+> run addressed 1.33 GB of published 10x files with 313 element references, and copied 14.0 MB
+> of that, which is 1.05%. The outputs below ship executed. A reader without an account sees
+> every value this run produced.
+""")
 
 
 md("""
@@ -27,9 +32,8 @@ The run has transcripts, a morphology image, cell and nucleus boundaries, and an
 matrix. The repo contains almost none of these bytes. Every file stays where 10x published it, in
 the public 10x bucket `10x.files`. The repo holds byte ranges into the files.
 
-This notebook is the read side. The build side is
-[`../scripts/upload_xenium_arraylake.py`](../scripts/upload_xenium_arraylake.py). The design and
-its constraints are in
+This notebook is the read side. The build side needs an Arraylake account, so its script stays
+outside this repository. The design and its constraints are in
 [`../icechunk-SpatialData/README.md`](../icechunk-SpatialData/README.md).
 
 Most of this notebook looks like ordinary data access. Only the byte counters show that the repo

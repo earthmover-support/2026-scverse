@@ -8,6 +8,8 @@ import tomllib
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKIP = {".git", ".pixi", "tools", "vendor", "__pycache__"}
 RUN_RE = re.compile(r"pixi run (?:(?:-e|--environment)[ =]\S+\s+)?([A-Za-z0-9][A-Za-z0-9_-]*)")
+# `pixi run python x.py` runs the environment's interpreter, not a task the manifest defines.
+INTERPRETERS = {"python", "python3", "jupyter", "pytest", "bash", "env"}
 
 def defined_tasks():
     manifest = tomllib.loads((ROOT / "pixi.toml").read_text())
@@ -31,6 +33,8 @@ def main():
         scanned += 1
         for n, line in enumerate(p.read_text(errors="ignore").splitlines(), 1):
             for m in RUN_RE.finditer(line):
+                if m.group(1) in INTERPRETERS:
+                    continue
                 if m.group(1) not in known:
                     bad.append(f"{p.relative_to(ROOT)}:{n}: {m.group(1)}")
     # A gate that walks nothing passes for the wrong reason. Fail instead.

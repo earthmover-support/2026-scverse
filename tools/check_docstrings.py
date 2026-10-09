@@ -8,19 +8,13 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TASKS = {
     "h5ad_virtualization": "check",
-    "tenx_matrix_virtualization": "check-tenx",
-    "virtual_csr_concat": "check-concat",
     "virtualize_cellxgene": "check-s3",
-    "block_sparsity": "check-sparsity",
-    "soma_sparse_prototype": "check-soma",
-    "chunk_policy": "check-policy",
-    "codec_policy": "check-codecs",
-    "rectilinear_chunks": "check-rectilinear",
-    "delta_decode_cost": "check-delta",
+    "virtual_csr_concat": "check-concat",
     "icechunk_many_arrays": "check-icechunk",
     "census_manifest_scale": "check-manifest",
-    "gene_axis_amplification": "check-gene-axis",
-    "census_gene_space": "-e census census-vars",
+    "block_sparsity": "check-sparsity",
+    "tenx_matrix_virtualization": "check-tenx",
+    "spatialdata_store_path": "check-store-path",
 }
 BANNED = ("research", "this project", "spike", "probe", "findings.md",
           "investigat", "we decided", "later", "originally")

@@ -1,20 +1,35 @@
 """Generate spatialdata_on_icechunk.ipynb.
 
-Run: pixi run spatialdata        (regenerate)
-     pixi run spatialdata-run    (regenerate, then execute)
+Run: pixi run -e spatial spatialdata        (regenerate)
+     pixi run -e spatial spatialdata-run    (regenerate, then execute)
 
-Both tasks run in the isolated `spatial` environment. SpatialData requires geopandas, shapely and
-dask. zarr-SOMA depends on none of them.
+Both tasks run in the isolated `spatial` environment, because SpatialData requires geopandas,
+shapely and dask. The default environment carries none of them.
 """
 
 from _notebook import BOOTSTRAP_TERSE, code, md, write
 
 md("""
+> **This notebook needs the pinned fork, and no account.** It writes a local Icechunk
+> repository in a temporary directory. SpatialData on Icechunk depends on
+> [pull request #1107](https://github.com/scverse/spatialdata/pull/1107) plus five commits, and
+> released `spatialdata` 0.8.0 lacks them. Fetch the fork, then run with the absolute path:
+>
+> ```shell
+> pixi run -e spatial sdpr
+> PYTHONPATH=<this repository>/vendor/spatialdata-1107/src pixi run -e spatial spatialdata-run
+> ```
+>
+> `docs/fork-pin.md` explains why pixi cannot pin the fork. The outputs below ship executed.
+""")
+
+md("""
 # SpatialData on Icechunk
 
-The rest of this repository builds a SOMA backend. This notebook asks a different question about the
-same storage layer. SpatialData is already Zarr and already OME-NGFF. Its coordinate transformation
-model is richer than the SOMA model. **This notebook tests what Icechunk adds to SpatialData.**
+The rest of this repository puts AnnData matrices on Icechunk. This notebook asks a different
+question about the same storage layer. SpatialData is already Zarr and already OME-NGFF, and it
+carries a rich coordinate transformation model. **This notebook tests what Icechunk adds to
+SpatialData.**
 
 Icechunk can add two things:
 
@@ -22,8 +37,8 @@ Icechunk can add two things:
 2. **Virtual chunk references**: Icechunk presents a dataset over files that nobody can write to.
    It does not copy the files.
 
-[`../icechunk-SpatialData/`](../icechunk-SpatialData) holds the findings, the spikes that produced
-them and the notes for upstream. This notebook is the demonstration.
+[`../icechunk-SpatialData/`](../icechunk-SpatialData) holds the findings and the notes for
+upstream. This notebook is the demonstration.
 
 > **This notebook runs against [PR #1107](https://github.com/scverse/spatialdata/pull/1107) with the
 > five commits that `icechunk-SpatialData/upstream/` documents.** The released 0.8.0 cannot write to a
@@ -36,7 +51,7 @@ them and the notes for upstream. This notebook is the demonstration.
 > ```
 
 The result: **versioning works, and SpatialData already plans it. Virtual references work, and
-SpatialData has no plan for them.** Geometry needs one attribute upstream. The patch series adds
+SpatialData has no plan for them.** Geometry needs one attribute upstream. The five commits add
 that attribute.
 """)
 
@@ -63,11 +78,11 @@ WORKDIR = tempfile.mkdtemp(prefix="spatialdata-icechunk-")
 isd.bounded_reads()
 print(f"spatialdata {spatialdata.__version__}   icechunk {icechunk.__version__}   "
       f"zarr {zarr.__version__}")
-# `pixi run -e spatial sdpr` builds the branch this notebook needs: PR #1107 plus the
-# icechunk-SpatialData/upstream/ series. That branch also reports 0.8.0, so print the path.
+# `pixi run -e spatial sdpr` fetches the branch this notebook needs: PR #1107 plus the five
+# commits that icechunk-SpatialData/upstream/ documents. It reports 0.8.0, so print the path.
 _where = pathlib.Path(spatialdata.__file__).parent
 print("loaded from an installed release" if "site-packages" in str(_where)
-      else "loaded from a source checkout — see the note above")
+      else "loaded from a source checkout; see the note above")
 if not isd.parquet_in_store_available():
     raise RuntimeError("this spatialdata has no `parquet_fs_fallback`; see the note above")
 """)
@@ -86,13 +101,13 @@ for kind in ("images", "labels", "points", "shapes", "tables"):
     print(f"  {kind:<8} {sorted(getattr(sdata, kind))}")
 print()
 print("images and labels are Zarr arrays; tables are AnnData-in-Zarr;")
-print("points and shapes are Parquet *beside* the Zarr hierarchy — which is the whole story.")
+print("points and shapes are Parquet *beside* the Zarr hierarchy, which is the whole story.")
 """)
 
 md("""
 ## 1. `SpatialData.write()`, to a store
 
-With PR #1107 and the patch series, `SpatialData.write()` takes the Icechunk store itself. Rasters
+With PR #1107 and the five commits, `SpatialData.write()` takes the Icechunk store itself. Rasters
 and tables are Zarr already. Shapes and points are Parquet files. `isd.parquet_in_store()` makes
 each file a `uint8` Zarr array at the path that SpatialData requests. The write goes through
 SpatialData's own writers.
@@ -227,7 +242,7 @@ except Exception as exc:
     print(f"  {str(exc).splitlines()[0][:110]}")
 
 sync(zarr.storage.LocalStore(os.path.join(WORKDIR, "plain")).set(KEY, payload))
-print("a LocalStore accepts the same key — so this is Icechunk's boundary, not a bug")
+print("a LocalStore accepts the same key, so this is Icechunk's boundary, not a bug")
 """)
 
 md("""
@@ -239,7 +254,7 @@ that SpatialData requests.
 
 So a *file* can be a 1-D `uint8` Zarr array. The fsspec namespace and the Zarr namespace are then
 identical. `ZarrArrayFileSystem` is about 120 lines. `parquet_in_store()` gives it to SpatialData
-through `parquet_fs_fallback`. The patch series adds that one attribute.
+through `parquet_fs_fallback`. The five commits add that one attribute.
 """)
 
 code("""
@@ -396,7 +411,7 @@ stored = braun.directory_size(os.path.join(WORKDIR, "parquet"))
 print(f"source file      {transcripts_size / 1e6:>8.1f} MB")
 print(f"references       {references:>8,} chunks")
 print(f"repository       {stored / 1e6:>8.1f} MB  "
-      f"({stored / transcripts_size:.2%} of the file — the copied tail)")
+      f"({stored / transcripts_size:.2%} of the file, the copied tail)")
 """)
 
 md("""
@@ -587,13 +602,13 @@ print(f"  {description}")
 print()
 print("This was long recorded here as a wall: AnnData writes those images (y, x, c), an element")
 print("must be (c, y, x), and a byte range cannot transpose. The premise holds and the conclusion")
-print("did not — the bytes never needed transposing. Zarr v3 has a transpose codec in its core")
+print("did not. The bytes never needed transposing. Zarr v3 has a transpose codec in its core")
 print("spec, so the element is (c, y, x) while the stored chunks stay channel-last. Measured at")
 print("384 references on this image, reading back identical to the stored image transposed.")
 print()
 print("The Xenium morphology images are JPEG 2000, which Zarr v3 had no codec for when this was")
 print("written. The TIFF parser this project reads images through supplies one, so those")
-print("../icechunk-SpatialData/, S4 and 'the codec, found'.")
+print("../icechunk-SpatialData/ and 'the codec, found'.")
 """)
 
 md("""
@@ -617,7 +632,7 @@ than the data. That is this repository's thesis, applied to a different data mod
 the SpatialData ecosystem does it. Its "lazy file linking" prototype soft-links whole files and
 defers to the source format's own reader. That is a different mechanism at a different granularity.
 
-**Interop needs the patch series.** With it, `SpatialData.write` and `SpatialData.read` take the
+**Interop needs the five commits.** With them, `SpatialData.write` and `SpatialData.read` take the
 store. Geometry goes through `parquet_fs_fallback`. Without it, no unmodified tool opens this store.
 
 **A byte range cannot re-encode, and that is its only limit.** An array keeps the source's dtype and

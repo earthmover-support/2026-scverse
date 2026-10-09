@@ -15,8 +15,8 @@ choice.
 
 The four `spatialdata` patches are a **series**, and they apply in order. 0001 only raises the
 `ome-zarr` requirement. Each other patch adds tests to that project's own suite, not to the
-verifiers here. `_io.py` and `_filesystem.py` in this repo exist as a workaround. Together, the
-four patches remove the need for them.
+verifiers here. This package's store I/O code and `_filesystem.py` exist as a workaround.
+Together, the four patches remove the need for them.
 
 | finding | project | state |
 |---|---|---|
@@ -59,11 +59,11 @@ from a true premise and reached an unchecked conclusion. Several documents then 
 | A deflated zip member cannot be referenced | a raw deflate stream "would need a zlib header prepended" | framing is a codec detail; the real obstacle is that deflate destroys interior offsets |
 
 We reasoned each false claim from a true premise and never tested it. We noticed the middle one
-only because `spike-s4` asserted that the codec did not resolve. That assertion failed.
+only because the image test asserted that the codec did not resolve. That assertion failed.
 
-The negative findings carry assertions too, and **both assertions failed**. `spike-s4` asserted
-that no Zarr v3 name reached imagecodecs' JPEG 2000. A parser then published one, and the assertion
-failed.
+The negative findings carry assertions too, and **both assertions failed**. The image test
+asserted that no Zarr v3 name reached imagecodecs' JPEG 2000. A parser then published one, and
+the assertion failed.
 
 `verify_full_object_checksum.py` also failed, and our response was wrong. The script refuses to pass
 if its comparison object loses its checksum header. That happened. The write-up took the failure as
@@ -224,13 +224,13 @@ with the same element from disk. "No exception" is not the claim.
 
 This patch does not cover geometry. Geometry needs a filesystem, and
 [`0002-parquet-fs-resolver-hook.patch`](0002-parquet-fs-resolver-hook.patch) supplies it. With both
-applied, every element type reads from a store with no path. An Icechunk-backed SpatialData needs
-exactly that. It is the reason that `_io.py` exists here.
+applied, every element type reads from a store with no path. An Icechunk-backed SpatialData
+needs exactly that. It is the reason this package carries its own store reader.
 
 ## spatialdata: write to a store that has no path
 
-This patch covers the other half of `_io.py`. It is the one finding here that is **not** a bug
-report. `write()` accepts a store and derives a path from it. If there is no path, it refuses:
+This patch covers the other half of that store I/O code. It is the one finding here that is
+**not** a bug report. `write()` accepts a store and derives a path from it. If there is no path, it refuses:
 
 ```
 NotImplementedError: Writing to a store of type MemoryStore is not supported because it
@@ -432,7 +432,7 @@ not run on a current stack. No code in `spatialdata` does this, on the release o
 0.4.1 has no `AnnData(` construction in `render.py`. The release contains the fix, and the gap came
 only from release timing.
 
-Before that release, `_plotting.py` rebound `AnnData` inside that one module. The binding pointed
+Before that release, a workaround module in this package rebound `AnnData`. The binding pointed
 to a constructor that drops the argument. That was safe, because `X` already carried the dtype that
 the call passed. Two tests covered it. One asserted that the argument was still stale. The other
 asserted that the patch made a *stock* render succeed. We deleted both, together with the module.
@@ -667,8 +667,8 @@ OME-TIFF microscopy images with pyramid levels*, and
 machinery to Python*. This project **pins their head commits in `pixi.toml`**. The environment that
 reads these images thus uses exactly the code under review, not a hand-made checkout. If a review
 changes the approach, we move the pin and re-execute the notebooks against it. The `async-tiff`
-build needs a Rust toolchain. `pixi run -e rust` provides it. `maturin build --release` from
-`python/` produces the wheel. Initialise its submodules first. Otherwise, the build fails after a
+build needs a Rust toolchain, which this repository does not declare. `maturin build --release`
+from `python/` produces the wheel. Initialise its submodules first. Otherwise, the build fails after a
 successful compile with a bare `No such file or directory`.
 
 The reproductions are in `tests/test_ome_tiff_microscopy.py`, which #107 carries. There is one test
@@ -716,7 +716,7 @@ matrix = csr_matrix((data, dsets["indices"], dsets["indptr"]), shape=(n_rows, n_
 ```
 
 It uses the same three arrays, unchanged. It reaches the same conclusion about the axis that
-`indptr` indexes. That code was always there. `pixi run probe-tenx` asserts that the virtualized
+`indptr` indexes. That code was always there. `pixi run check-tenx` asserts that the virtualized
 matrix equals `scanpy.read_10x_h5` on the same file. Both are 167,780 x 541 with 10,640,759 stored
 values, identical. The check thus uses a reader that nobody here wrote, not another read of ours.
 One difference exists. scanpy defaults to `gex_only=True`, which keeps 313 of the 541 features and
@@ -758,15 +758,15 @@ sorts that information by our cost, not by the owner.
 | module | lines | destination | state |
 |---|---|---|---|
 | `_filesystem.py` | 103 | `spatialdata`, via a registered resolver | [`0002`](0002-parquet-fs-resolver-hook.patch), verified |
-| `_io.py` (read) | in the total below | `spatialdata`, reads from a store | [`0003`](0003-keep-the-element-location.patch), verified two-sided |
-| `_io.py` (write) | 326 total | `spatialdata`, writes to a store | [`0004`](0004-write-to-a-store-without-a-path.patch), a proposal, not a fix |
+| store read path | in the total below | `spatialdata`, reads from a store | [`0003`](0003-keep-the-element-location.patch), verified two-sided |
+| store write path | 326 total | `spatialdata`, writes to a store | [`0004`](0004-write-to-a-store-without-a-path.patch), a proposal, not a fix |
 | `_virtual.py` (image) | 453 total | `virtual-tiff` | reads through it already; the five fixes are in review as #107 and #328, not yet released |
 | `_virtual.py` (table) | in the total above | nowhere obvious | scanpy already declares 10x's layout; the remaining work applies it to a manifest, not to h5py, as a VirtualiZarr-to-AnnData bridge |
 | `_reference.py` | 66 | [`icechunk.files`](https://github.com/earth-mover/filestore) | that proposal covers it, in its own terms |
 | `_transaction.py` | 37 | nowhere in particular | [demonstrated](#the-transaction-is-the-stores-not-a-wrappers): with 0004 applied the property is Icechunk's, and the wrapper is a convenience |
-| `_geometry.py` | 161 | nowhere | not a fix that waits for anyone: an alternative encoding, kept while the Parquet route needs an unmerged patch |
+| geometry as Zarr arrays | 161 | nowhere | not a fix that waits for anyone: an alternative encoding, kept while the Parquet route needs an unmerged patch |
 
 Every row has either an artifact or a demonstration. Two rows were not upstream gaps after all. A
 check against somebody else's code showed that. scanpy already declares 10x's matrix layout, and
-Icechunk already makes a write atomic with no wrapper around it. `_geometry.py` is the only row that
-is a decision, not a wait. It is also the largest single deletion available.
+Icechunk already makes a write atomic with no wrapper around it. Geometry as Zarr arrays is the
+only row that is a decision, not a wait. It is also the largest single deletion available.

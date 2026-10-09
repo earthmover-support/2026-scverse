@@ -4,10 +4,12 @@ Do not depend on this package. The
 [2nd SpatialData Hackathon report](https://index.biohackrxiv.org/2026/06/07/s6bph.html) proposes an
 Icechunk integration. Nobody had built code to test that design, so this prototype exists.
 
-With PR #1107 and the patch series in `../upstream/`, `SpatialData.write` and `SpatialData.read`
-take an Icechunk store directly. Geometry needs one addition: `parquet_in_store`. It stores each
-Parquet file as a `uint8` Zarr array at the same path. SpatialData's own writers and readers do the
-I/O. See `_filesystem`.
+On the fork that `pixi run -e spatial sdpr` fetches, `SpatialData.write` and
+`SpatialData.read` take an Icechunk store directly. That fork holds pull request #1107 plus the
+five commits that `../upstream/` documents.
+
+Geometry needs one addition: `parquet_in_store`. It stores each Parquet file as a `uint8` Zarr
+array at the same path. SpatialData's own writers and readers do the I/O. See `_filesystem`.
 
 This package also holds the parts that SpatialData has no plan for:
 

@@ -24,8 +24,8 @@ A later edit adds a snapshot. It does not overwrite the earlier state.
 > PYTHONPATH=<this repository>/vendor/spatialdata-1107/src pixi run -e spatial versioning-run
 > ```
 >
-> The comparison link is
-> [scverse/spatialdata...li-em:store-without-a-path](https://github.com/scverse/spatialdata/compare/main...li-em:spatialdata:li-em/store-without-a-path).
+> The five commits are in [`icechunk-SpatialData/UPSTREAM.md`](../icechunk-SpatialData/UPSTREAM.md),
+> which carries the comparison link.
 
 The data is `spatialdata.datasets.blobs()`, reduced to an image, a labels element and a table.
 """)

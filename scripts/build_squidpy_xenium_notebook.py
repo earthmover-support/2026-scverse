@@ -1,11 +1,13 @@
 """Generate squidpy_xenium_virtual.ipynb.
 
-Run: pixi run -e squidpy squidpy-xenium        (regenerate)
-     pixi run -e squidpy squidpy-xenium-run    (regenerate, then execute)
+This repository defines no pixi task for the notebook, and it declares no squidpy environment.
+Regenerate it with `python scripts/build_squidpy_xenium_notebook.py`.
 
-squidpy has its own environment. It pins `imagecodecs <2026`, and that pin keeps tifffile at one
-version. The Zarr view of a TIFF in that version does not import against zarr 3.3. Thus the
-`spatial` environment took the newer tifffile, and squidpy stayed in its own environment.
+Executing it needs an Arraylake account and squidpy, so the committed outputs ship executed.
+
+squidpy needs an environment of its own. It pins `imagecodecs <2026`, and that pin keeps
+tifffile at one version. The Zarr view of a TIFF in that version does not import against zarr
+3.3. Thus the `spatial` environment took the newer tifffile.
 
 The notebook replaces squidpy's `tutorial_xenium.ipynb`. It uses the same Human Lung Cancer sample.
 It reads the sample from `earthmover-demos/xenium-lung-virtual`, not from a downloaded and converted
@@ -18,6 +20,14 @@ Without the section, this notebook would be a shorter tutorial, not the same one
 """
 
 from _notebook import code, md, write
+
+md("""
+> **This notebook needs an Arraylake account.** It reads the Arraylake repository
+> `earthmover-demos/xenium-lung-virtual`, and Arraylake has no anonymous read. The committed run
+> built an AnnData of 162,254 cells by 541 genes from that repository, and ran the whole squidpy
+> Xenium tutorial on it. The outputs below ship executed. A reader without an account sees every
+> figure this run produced.
+""")
 
 TUTORIAL = "https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_xenium.html"
 

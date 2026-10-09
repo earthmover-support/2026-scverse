@@ -2,9 +2,9 @@
 
 Run: pixi run check-store-path
 
-The script commits an image to an Icechunk repository and reads it back, which works on
-released packages. It writes the same shapes to a local store, which works. It then writes them
-to an Icechunk store, which raises. The shapes writer reads `store.root` to build a parquet
+The script prints the spatialdata version it tested. It commits an image to an Icechunk
+repository and reads it back, which works on released packages. It writes the same shapes to a
+local store, which works. It then writes them to an Icechunk store, which raises. The shapes writer reads `store.root` to build a parquet
 file path. The five commits linked in the output remove that limit.
 """
 
@@ -18,6 +18,7 @@ import icechunk
 import numpy as np
 import zarr
 from shapely.geometry import Point
+import spatialdata
 from spatialdata.models import Image2DModel, ShapesModel
 
 BRANCH = (
@@ -27,6 +28,8 @@ BRANCH = (
 
 
 def main():
+    # The claim holds for a given release, so the output names the version it tested.
+    print(f"spatialdata {spatialdata.__version__}")
     from spatialdata._io.io_raster import write_image
     from spatialdata._io.io_shapes import write_shapes
 

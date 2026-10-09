@@ -2,9 +2,9 @@
 
 Run: pixi run check-icechunk
 
-A SOMA dataframe is one array per column plus a zone map. An experiment holds several
-dataframes. Each write also adds a delta block of `ndim + 1` arrays, and this count has no upper
-limit. A repo with a thousand writes before compaction therefore holds thousands of arrays.
+A columnar store writes one array per column. An AnnData or SpatialData store therefore holds
+many small arrays. Each incremental write can add a further block of arrays. A repository with
+a thousand writes before compaction holds thousands of arrays.
 
 The script prints commit time, reopen time, listing time and stored size at 64 to 4,096 blocks
 of three arrays. It asserts that the listing returns every block. It then fixes 1,024 blocks and
@@ -29,7 +29,7 @@ VALUES_PER_ARRAY = 512
 
 
 def build(path, n_arrays, per_commit):
-    """Write n_arrays small arrays in a nested layout like SOMA, with a commit per batch."""
+    """Write n_arrays small arrays in a nested group layout, with a commit per batch."""
     repo = icechunk.Repository.create(icechunk.local_filesystem_storage(path))
     data = np.arange(VALUES_PER_ARRAY, dtype=np.int32)
 
@@ -41,9 +41,9 @@ def build(path, n_arrays, per_commit):
         batch = min(per_commit, n_arrays - written)
         for i in range(batch):
             index = written + i
-            # Copy the real shape: delta blocks under one group, with a few arrays each.
-            block = root.require_group(f"soma_delta/d{index:06d}")
-            for name in ("soma_dim_0", "soma_dim_1", "soma_data"):
+            # Copy the real shape: blocks under one group, with a few arrays each.
+            block = root.require_group(f"deltas/d{index:06d}")
+            for name in ("dim_0", "dim_1", "data"):
                 block.create_array(name, shape=data.shape, dtype=data.dtype,
                                    chunks=data.shape, overwrite=True)[:] = data
         start = time.perf_counter()
@@ -79,7 +79,7 @@ def main():
             reopen = time.perf_counter() - start
 
             start = time.perf_counter()
-            names = list(root["soma_delta"].keys())
+            names = list(root["deltas"].keys())
             listing = time.perf_counter() - start
             assert len(names) == n, f"{len(names)} != {n}"
 
@@ -121,8 +121,8 @@ def main():
     print(f"{last[0]:,} arrays holding {last[4] / 1e6:.0f}MB of data occupied "
           f"{last[3] / 1e6:.0f}MB.")
     print()
-    print("Design consequence for zarr-SOMA: compact delta blocks on a schedule. Reads scan")
-    print("every delta, and the table above shows how commit time scales with array count.")
+    print("Design consequence: compact the blocks on a schedule. Reads scan every block, and")
+    print("the table above shows how commit time scales with array count.")
 
 
 if __name__ == "__main__":

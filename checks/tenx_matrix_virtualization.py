@@ -5,9 +5,9 @@ Run: pixi run check-tenx
 The check needs network access and reads about 12 MB from the public 10x bucket.
 
 10x stores the matrix as CSC of shape (n_features, n_barcodes). Its indptr indexes barcodes and
-its indices hold feature indices. The same bytes are therefore CSR over cells, as a SOMA X of
-shape (cells, genes) needs. A byte range cannot transpose, so this layout decides whether the
-matrix can stay virtual.
+its indices hold feature indices. The same bytes are therefore CSR over cells, which is the
+orientation an `X` of shape (cells, genes) needs. A byte range cannot transpose, so this layout
+decides whether the matrix can stay virtual.
 
 The check compares the references with an h5py read and with scanpy read_10x_h5. scanpy builds
 its csr_matrix from the same three arrays, with no transpose. The check passes gex_only=False,
@@ -19,8 +19,6 @@ variable-length strings. `pixi run check` shows that references work for fixed-l
 and not for variable-length strings. A 10x matrix therefore has more complete references than a
 CELLxGENE h5ad. They include gene names and cell ids.
 
-The check also asserts that zarr_soma.virtual.plan refuses this file, because the file has no
-AnnData encoding-type. plan can recognise it only after a deliberate change.
 """
 
 import warnings
@@ -125,21 +123,6 @@ def main():
     )
     print(f"  and identical to scanpy.read_10x_h5, which declares the same layout: "
           f"{reference.shape[0]:,} x {reference.shape[1]:,}")
-
-    # Confirm that this project deliberately refuses the file.
-    from zarr_soma import virtual
-
-    try:
-        virtual.plan(URL, registry, group="matrix")
-    except ValueError as refusal:
-        assert "csr_matrix" in str(refusal), refusal
-        print("  zarr_soma.virtual.plan refuses it, as designed:")
-        print(f"    {refusal}")
-    else:
-        raise AssertionError(
-            "plan() accepted a 10x matrix; it is supposed to require an AnnData "
-            "encoding-type, so this check's premise no longer holds"
-        )
 
     print("\n10x's own layout is virtualizable, and more completely than an h5ad's, because")
     print("its strings are fixed length. Supporting it is a recognition change, not a")

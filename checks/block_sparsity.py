@@ -5,8 +5,8 @@ Run: pixi run check-sparsity
 A Zarr array stores only the chunks that a writer writes. The empty regions of a dense chunk
 grid over a sparse matrix therefore cost no storage. The script tests this on ClassErythrocyte
 and ClassFibroblast at four grids. It asserts that every block of every grid holds a stored
-value. A dense layout then stores every block, so a Zarr-backed SOMASparseNDArray must store an
-explicit sparse encoding.
+value. A dense layout then stores every block. A Zarr array over single-cell counts must
+therefore carry an explicit sparse encoding.
 
 Needs local data: the h5ads of ClassErythrocyte and ClassFibroblast in h5ads/. The script prints
 the download URLs when they are missing.
