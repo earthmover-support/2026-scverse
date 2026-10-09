@@ -9,7 +9,7 @@ required=(
   checks/_shards.py checks/h5ad_virtualization.py checks/virtualize_cellxgene.py
   checks/virtual_csr_concat.py checks/icechunk_many_arrays.py
   checks/census_manifest_scale.py checks/block_sparsity.py
-  checks/tenx_matrix_virtualization.py
+  checks/tenx_matrix_virtualization.py checks/spatialdata_store_path.py
   notebooks/virtualize_braun.ipynb
   scripts/build_notebook.py scripts/_notebook.py
   tools/check_manifest.sh tools/check_paths.py tools/check_tasks.py
