@@ -41,7 +41,7 @@ for p in "${required[@]}"; do
 done
 
 forbidden=(
-  zarr-SOMA docs/zarr-soma probes vendor patches data findings.md talk.md
+  zarr-SOMA docs/zarr-soma probes patches data findings.md talk.md
   notebooks/compare_backends.ipynb notebooks/compare_backends_public_s3.ipynb
   notebooks/compare_backends_object_store.ipynb notebooks/compare_backends_spatial.ipynb
   notebooks/merfish_scene.ipynb
@@ -56,6 +56,12 @@ for p in "${forbidden[@]}"; do
   [ -e "$p" ] && { echo "PRESENT $p"; fail=1; }
 done
 
+# vendor/ holds the fork that `sdpr` fetches, so a reader has it. The gate asserts only that git
+# does not track it.
+if git ls-files --error-unmatch vendor >/dev/null 2>&1; then
+  echo "TRACKED vendor"; fail=1
+fi
+
 # h5ads/ holds the downloaded source data that several checks measure. A reader is meant to
 # have it, so the gate asserts only that git does not track it.
 if git ls-files --error-unmatch h5ads >/dev/null 2>&1; then
@@ -67,14 +73,14 @@ if grep -rIlw -i \
     -e 'virtual_omics' -e 'soma-on-icechunk' -e 'zarr-SOMA' -e 'zarr_soma' \
     -e 'somacore' -e 'tiledbsoma' -e 'h5mu' -e 'mudata' -e 'findings.md' \
     -e 'datascale-poster' -e 'probes/' -e 'seam' \
-    . --exclude-dir=.git --exclude-dir=.pixi --exclude-dir=tools \
+    . --exclude-dir=.git --exclude-dir=.pixi --exclude-dir=tools --exclude-dir=vendor \
     --exclude=pixi.lock >/tmp/soma_excluded_hits.txt 2>/dev/null; then
   if [ -s /tmp/soma_excluded_hits.txt ]; then
     echo "EXCLUDED TERMS IN:"; cat /tmp/soma_excluded_hits.txt; fail=1
   fi
 fi
 # A stale probes/ path must not survive the rename in Task 2.
-if grep -rIl -e 'probes/' . --exclude-dir=.git --exclude-dir=.pixi --exclude-dir=tools \
+if grep -rIl -e 'probes/' . --exclude-dir=.git --exclude-dir=.pixi --exclude-dir=tools --exclude-dir=vendor \
     --exclude=pixi.lock >/tmp/soma_probe_hits.txt 2>/dev/null; then
   if [ -s /tmp/soma_probe_hits.txt ]; then
     echo "STALE probes/ PATH IN:"; cat /tmp/soma_probe_hits.txt; fail=1

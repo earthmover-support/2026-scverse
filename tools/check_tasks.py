@@ -6,7 +6,7 @@ import sys
 import tomllib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SKIP = {".git", ".pixi", "tools", "__pycache__"}
+SKIP = {".git", ".pixi", "tools", "vendor", "__pycache__"}
 RUN_RE = re.compile(r"pixi run (?:(?:-e|--environment)[ =]\S+\s+)?([A-Za-z0-9][A-Za-z0-9_-]*)")
 
 def defined_tasks():

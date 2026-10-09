@@ -5,7 +5,7 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SKIP = {".git", ".pixi", "tools", "__pycache__"}
+SKIP = {".git", ".pixi", "tools", "vendor", "__pycache__"}
 PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:py|md|ipynb|toml|lock))`")
 # Documents outside this repository. The SOMA abstract spec, and somacore's own modules.
 ALLOW = {

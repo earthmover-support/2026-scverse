@@ -98,6 +98,17 @@ The patch resolves only the paths of a local read, which the read task's
 `ParquetFunctionWrapper.fs` identifies. The repr reads the metadata through the frame's own
 filesystem when it has one.
 
+## A limit that the patches do not fix: `write_element`
+
+`SpatialData.write_element` raises `ValueError: The SpatialData object appears not to be backed
+by a Zarr storage, so elements cannot be written to disk.` It does so with all five patches
+applied. `read_zarr(store)` sets no `path` on the object, because a store has no filesystem path,
+and `write_element` tests `self.path is None` in `_core/spatialdata.py`. So `is_backed()` is false.
+
+We did not write a patch. The workaround writes through the element writers, which take a
+`zarr.Group`: delete the old group, then call `write_table` or `write_shapes` on the session's
+root group. `spatialdata_versioning.ipynb` shows both.
+
 ## The fix in ome-zarr-py
 
 ome-zarr-py merged the `ZarrLocation` change as

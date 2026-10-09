@@ -16,7 +16,7 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SKIP = {".git", ".pixi", "tools", "__pycache__"}
+SKIP = {".git", ".pixi", "tools", "vendor", "__pycache__"}
 SUFFIXES = {".md", ".py", ".ipynb", ".toml"}
 BANNED = [
     "this is the first",

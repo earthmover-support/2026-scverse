@@ -33,9 +33,6 @@ The data is `spatialdata.datasets.blobs()`, reduced to an image, a labels elemen
 code(BOOTSTRAP_TERSE + """
 import os
 import tempfile
-import warnings
-
-warnings.simplefilter("ignore")
 
 import icechunk
 import spatialdata
@@ -92,9 +89,11 @@ print("first snapshot:", first.snapshot)
 md("""
 ## Commit 2: change the table's `obs`
 
-SpatialData cannot write one element to a store that has no path. So the notebook reads the
-dataset from the open session, edits the table, and replaces the table group with SpatialData's
-own `write_table`.
+`SpatialData.write_element` is the natural call here, and it fails even with the fork. It raises
+`ValueError: ... appears not to be backed by a Zarr storage`, because `read_zarr` on a store sets
+no `path` on the object. So the notebook does not use it. It reads the dataset from the open
+session, edits the table, deletes the old table group, and calls SpatialData's `write_table`
+on the session's root group. `icechunk-SpatialData/UPSTREAM.md` records this limit.
 """)
 
 code("""
