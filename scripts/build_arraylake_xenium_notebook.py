@@ -297,7 +297,7 @@ SpatialData's own on-disk format, and SpatialData's own writer wrote it. It is d
 build made the polygons from the *referenced* vertex table, in the same transaction. Thus the
 repo materializes it: 13 MB, against 1.33 GB addressed.
 
-SpatialData's own reader needs one upstream change to read it back: the fsspec seam in
+SpatialData's own reader needs one upstream change to read it back: the fsspec change in
 [spatialdata#1107](https://github.com/scverse/spatialdata/pull/1107). Without it, geometry I/O
 requires a filesystem path. Without that branch, the cell below reads the GeoParquet bytes
 directly. That fallback works, but it skips the coordinate transformations.
@@ -530,7 +530,7 @@ is weaker than the rest of this repo.
 chunk cannot pad. The image element has no tail, because there a chunk is a whole codestream. The
 JPEG 2000 codec comes with `virtual-tiff`. Its fixes for these files are in review and not
 released. Thus the environment pins the pull-request branches. SpatialData's own reader needs the
-#1107 fsspec seam to read geometry out of a store at all. That is one upstream change, on the
+#1107 fsspec change to read geometry out of a store at all. That is one upstream change, on the
 read path. With it, the whole approach works with nothing monkeypatched.
 """)
 

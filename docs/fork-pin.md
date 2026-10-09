@@ -36,4 +36,4 @@ pixi run -e spatial sdpr
 export PYTHONPATH=$PWD/vendor/spatialdata-1107/src
 ```
 
-`sdpr` clones the branch and applies `icechunk-SpatialData/upstream/000*.patch`.
+`sdpr` clones `li-em/store-without-a-path` and checks out commit `391427b`. That commit holds #1107 and the five commits.

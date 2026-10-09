@@ -1100,6 +1100,7 @@ def test_an_unrecognised_tile_codec_is_refused():
     This test checks that an unknown compressor still stops the parser.
     The parser does not use an approximation.
     """
+    pytest.importorskip("virtual_tiff")
     from virtual_tiff.parser import _get_compression
 
     class Unmapped:
