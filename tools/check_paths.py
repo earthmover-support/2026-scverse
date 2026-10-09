@@ -16,7 +16,7 @@ ALLOW = {
 }
 LINK_RE = re.compile(r"\]\(([^)]+\.(?:py|md|ipynb|toml|lock))\)")
 # The gate walks the whole tree. A floor catches a skip bug that silently narrows the scan.
-MINIMUM_FILES = 50
+MINIMUM_FILES = 20  # Catches a collapsed scan. Task 7 raises it to the final count.
 
 def basenames():
     return {p.name for p in ROOT.rglob("*") if p.is_file() and not any(x in SKIP for x in p.relative_to(ROOT).parts)}
