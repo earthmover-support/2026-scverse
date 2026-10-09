@@ -25,9 +25,6 @@ only. The repository it builds is local, in a temporary directory.
 code(BOOTSTRAP + """
 import tempfile
 import urllib.request
-import warnings
-
-warnings.simplefilter("ignore")
 
 import anndata as ad
 import icechunk
@@ -98,7 +95,13 @@ with `ad.read_zarr`.
 
 code("""
 local = f"{WORKDIR}/{SHARD.local_name}"
-urllib.request.urlretrieve(SHARD.https_url.decode(), local)
+for attempt in range(3):
+    try:
+        urllib.request.urlretrieve(SHARD.https_url.decode(), local)
+        break
+    except OSError:
+        if attempt == 2:
+            raise
 print(braun.check_local_copy(SHARD, WORKDIR))
 
 frames = braun.read_elements_at(SHARD.https_url, ["obs", "var"], local)
@@ -175,7 +178,11 @@ md("""
 ## What the run shows
 
 Scanpy selects the same 2,000 genes from both objects. The two dispersion vectors correlate
-as printed above, over the genes with a defined dispersion. `X` is identical, so scanpy has no way to tell the two objects apart.
+as printed above, over the genes with a defined dispersion. The other genes have no counts in
+this shard, so their dispersion is undefined in both runs.
+
+The gene-set agreement follows from `X` being identical. It is not independent evidence. The
+value of the run is that an unmodified scanpy workflow runs against a virtual store.
 
 The run does not show that all of the AnnData is virtual. `obs` and `var` are native
 Zarr chunks, not virtual references. Only `X` is virtual.
