@@ -48,7 +48,7 @@ writers:
 
 ```
 shapes/blobs_circles/shapes.parquet                array (3210,) uint8
-points/blobs_points/points.parquet/part.0.parquet  array (6854,) uint8
+points/blobs_points/points.parquet/part.0.parquet  array (6858,) uint8
 ```
 
 ### 0003: keep the element's location in a store that cannot be re-rooted

@@ -510,8 +510,8 @@ path. Zarr accepts an array named `shapes.parquet`, at exactly that path. So a *
 
 ```
 shapes/blobs_circles/shapes.parquet                array (3210,) uint8
-shapes/blobs_polygons/shapes.parquet               array (3065,) uint8
-points/blobs_points/points.parquet/part.0.parquet  array (6854,) uint8
+shapes/blobs_polygons/shapes.parquet               array (3068,) uint8
+points/blobs_points/points.parquet/part.0.parquet  array (6858,) uint8
 ```
 
 The result is geometry in **SpatialData's own format**. SpatialData's own writers and readers write
