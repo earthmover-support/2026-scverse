@@ -22,7 +22,7 @@ Each row names the command, or the committed notebook, that supports it.
 | A dense Zarr chunk grid cannot encode single-cell sparsity | `pixi run check-sparsity` |
 | Icechunk gives a SpatialData store commits and history | `pixi run -e spatial versioning-run` |
 | An image writes to an Icechunk store and reads back | `pixi run check-store-path` |
-| Labels and tables write unmodified too | `pixi run -e spatial versioning-run`, [`UPSTREAM.md`](icechunk-SpatialData/UPSTREAM.md) |
+| Labels and tables write through the fork's `SpatialData.write()` | `pixi run -e spatial versioning-run` |
 | Shapes need a filesystem path on released packages | `pixi run check-store-path` |
 | The Braun atlas store holds no expression bytes | `notebooks/virtualize_braun.ipynb`, committed |
 | A whole 10x Xenium bundle is addressable by reference | `notebooks/xenium_from_arraylake.ipynb`, committed |
@@ -50,6 +50,10 @@ nothing else.
 
 The virtualized atlas lives in the Arraylake repository
 `earthmover-demos/cellxgene-braun-atlas`. Two Icechunk calls measure it.
+
+The four figures below differ from every other number in this file. No committed output holds
+them. We measured them against the published repository with the two calls named below. A
+reader needs an Arraylake account to repeat that measurement.
 
 `repo.chunk_storage_stats()` reports 11,309,388,995 virtual bytes, which is 11.31 GB. Those
 bytes are the CSR chunks of eleven source files, and nothing else. The same call reports

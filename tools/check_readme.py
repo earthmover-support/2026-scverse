@@ -82,7 +82,11 @@ RATIO_TERMS = [
     r"287 manifest files holding ([\d,]+) bytes",
 ]
 RATIO_CLAIM = r"ratio of referenced bytes to stored bytes is about (\d+) to 1"
-RATIO_TOLERANCE = 5
+# A stated ratio above the computed one overstates the result, so no slack goes that way.
+# Below it, rounding down stays honest, and 3 is the most a round number needs.
+RATIO_ROUNDING = 3
+# "upper bound" must qualify the ratio, not sit anywhere in the file.
+RATIO_WINDOW = 160
 
 
 def notebook_text(path):
@@ -124,11 +128,12 @@ def ratio_problems():
         yield "README states no referenced-to-stored ratio"
         return
     computed = values[0] / (values[1] + values[2])
-    if abs(computed - int(stated.group(1))) > RATIO_TOLERANCE:
-        yield (f"README says {stated.group(1)} to 1, the printed figures give "
+    claimed = int(stated.group(1))
+    if claimed > computed or computed - claimed > RATIO_ROUNDING:
+        yield (f"README says {claimed} to 1, the printed figures give "
                f"{computed:.1f} to 1")
-    if "upper bound" not in flat:
-        yield "README does not call the ratio an upper bound"
+    if "upper bound" not in flat[stated.end():stated.end() + RATIO_WINDOW]:
+        yield "README does not call the ratio an upper bound beside the ratio"
 
 
 def over_long(text):
