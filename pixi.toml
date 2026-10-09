@@ -1,0 +1,109 @@
+[workspace]
+name = "soma-icechunk"
+description = "The SOMA data model on Zarr and Icechunk, with h5ad matrices referenced by byte range"
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+
+[dependencies]
+python = "3.13.*"
+anndata = ">=0.13.2,<0.14"
+zarr = ">=3.3.0,<4"
+xarray = ">=2026.7.0,<2027"
+h5py = ">=3.16.0,<4"
+scipy = ">=1.18.0,<2"
+numpy = ">=2.4,<3"  # upper end held back so scanpy/numba can resolve
+pandas = ">=3.0.5,<4"
+virtualizarr = ">=2.7.1,<3"
+icechunk = ">=2.1.2,<3"
+obstore = ">=0.11.0,<0.12"
+jupyterlab = ">=4.6.2,<5"
+arraylake = ">=1.2.0,<2"
+pyarrow = ">=25.0.0,<26"
+somacore = ">=2.0.0,<3"
+pytest = ">=9.1.1,<10"
+scanpy = ">=1.12.3,<2"
+s3fs = ">=2026.6.0,<2027"
+moto = ">=5.2.2,<6"
+
+[pypi-dependencies]
+zarr-soma = { path = "./zarr-SOMA", editable = true }
+
+[tasks]
+lab = "jupyter lab notebooks/"
+
+# The notebook is generated from build_notebook.py; regenerating clears its outputs.
+notebook = "python scripts/build_notebook.py"
+notebook-run = { cmd = "jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=3600 notebooks/virtualize_braun.ipynb", depends-on = [
+  "notebook",
+] }
+
+# The same comparison over object storage, with zarr-SOMA on Icechunk.
+compare-s3 = "python scripts/build_object_store_notebook.py"
+compare-s3-run = { cmd = "jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=1800 notebooks/compare_backends_object_store.ipynb", depends-on = [
+  "compare-s3",
+] }
+
+# The same comparison against CZI's public bucket, with zarr-SOMA referencing their h5ad
+# rather than holding a copy of it.
+compare-public = "python scripts/build_public_s3_notebook.py"
+compare-public-run = { cmd = "jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=3600 notebooks/compare_backends_public_s3.ipynb", depends-on = [
+  "compare-public",
+] }
+
+# A spatial dataset: counts, spot coordinates and the tissue image all referenced, against
+# the Census's typed SOMAScene.
+compare-spatial = "python scripts/build_spatial_notebook.py"
+compare-spatial-run = { cmd = "jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=3600 notebooks/compare_backends_spatial.ipynb", depends-on = [
+  "compare-spatial",
+] }
+
+# MERFISH: no Census store to compare against, so a demonstration rather than a comparison.
+# Two coordinate spaces, no images, and the source served over plain HTTPS.
+merfish = "python scripts/build_merfish_notebook.py"
+merfish-run = { cmd = "jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=3600 notebooks/merfish_scene.ipynb", depends-on = [
+  "merfish",
+] }
+
+check = "python checks/h5ad_virtualization.py"
+
+check-tenx = "python checks/tenx_matrix_virtualization.py"
+check-concat = "python checks/virtual_csr_concat.py"
+check-s3 = "python checks/virtualize_cellxgene.py"
+check-sparsity = "python checks/block_sparsity.py"
+check-soma = "python checks/soma_sparse_prototype.py"
+check-policy = "python checks/chunk_policy.py"
+check-codecs = "python checks/codec_policy.py"
+check-rectilinear = "python checks/rectilinear_chunks.py"
+check-delta = "python checks/delta_decode_cost.py"
+check-icechunk = "python checks/icechunk_many_arrays.py"
+check-manifest = "python checks/census_manifest_scale.py"
+check-gene-axis = "python checks/gene_axis_amplification.py"
+test = "pytest zarr-SOMA/tests -q -m 'not slow'"
+test-slow = "pytest zarr-SOMA/tests -q -m slow"
+
+# tiledbsoma reads CZI's published Census SOMA experiment for the comparison's reference side.
+# It is isolated because it pins somacore 1.0.29 and pandas below 3, which the default
+# environment cannot hold.
+[feature.census]
+platforms = ["osx-arm64", "linux-64"]
+
+[feature.census.dependencies]
+python = "3.12.*"
+numpy = "<2.3"
+pandas = "<3"
+pyarrow = "*"
+scipy = "*"
+anndata = "<0.12"
+scanpy = "*"
+attrs = ">=22.2"
+more-itertools = "*"
+typing-extensions = ">=4.5"
+
+[feature.census.pypi-dependencies]
+tiledbsoma = ">=2.3"
+
+[feature.census.tasks]
+census-vars = "python checks/census_gene_space.py"
+
+[environments]
+census = { features = ["census"], no-default-feature = true }

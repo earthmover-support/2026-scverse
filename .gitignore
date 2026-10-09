@@ -1,0 +1,7 @@
+.pixi/
+__pycache__/
+*.pyc
+*.h5ad
+*.h5
+h5ads/
+.ipynb_checkpoints/
