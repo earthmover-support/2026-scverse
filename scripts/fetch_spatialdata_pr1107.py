@@ -1,6 +1,7 @@
 """Check out the spatialdata PR #1107 tree at a pinned commit, on a path that persists.
 
-Run: pixi run sdpr        (clone, then check out the pinned commit)
+Run: pixi run -e spatial sdpr        (clone, then check out the pinned commit)
+The `--path` flag also prints the source path alone, for use in scripts.
 
 No dependency pin can hold the tree. The fork's tags are stale, so its version reads below the
 one that `icechunk-spatialdata` requires. Python reads the tree from disk through `PYTHONPATH`.
@@ -44,6 +45,9 @@ def main() -> None:
         run("clone", "-q", "-b", BRANCH, REMOTE, str(CHECKOUT))
     run("checkout", "-q", COMMIT, at=CHECKOUT)
 
+    head = run("rev-parse", "HEAD", at=CHECKOUT)
+    if head != COMMIT:
+        raise SystemExit(f"checkout is at {head[:7]}, not {COMMIT[:7]}")
     if not (CHECKOUT / STORE_MODULE).is_file():
         raise SystemExit(f"{COMMIT[:7]} has no {STORE_MODULE}; the checkout is wrong")
 

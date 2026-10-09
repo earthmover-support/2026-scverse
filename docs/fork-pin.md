@@ -29,11 +29,28 @@ so the build reports a version below 0.8 (inferred from the solver error). `icec
 
 The manifest drops the git pin and the `ome-zarr` pin. The lock then holds released
 `spatialdata` 0.8.0 from PyPI in the `spatial` environment. That release lacks #1107.
-To use the fork, run:
+To use the fork, fetch it once:
 
 ```bash
 pixi run -e spatial sdpr
-export PYTHONPATH=$PWD/vendor/spatialdata-1107/src
 ```
 
-`sdpr` clones `li-em/store-without-a-path` and checks out commit `391427b`. That commit holds #1107 and the five commits.
+`sdpr` clones `li-em/store-without-a-path` and checks out commit `391427b`. That commit holds
+#1107 and the five commits. Then prefix every command with the absolute path `sdpr` prints:
+
+```bash
+PYTHONPATH=<absolute path to this repository>/vendor/spatialdata-1107/src pixi run -e spatial <command>
+```
+
+The path must be absolute, because `nbconvert` runs its kernel in the notebook directory.
+
+## What changes without it
+
+Without `PYTHONPATH`, `spike-test` skips 14 tests. With it, the same run gives 27 passed and
+6 skipped. The SpatialData notebooks cannot run at all.
+
+## What the fork fixes
+
+SpatialData writes shapes and points through a filesystem path. `parquet_fs_and_path` accepts
+only `LocalStore` and `FsspecStore`, so an Icechunk store has no path to give. The fork lifts
+that limit.

@@ -27,7 +27,8 @@ spatialdata = ">=0.8.0,<0.9"
 
 [tasks]
 lab = "jupyter lab notebooks/"
-# The prototype's tests need the spatial environment, so `spike-test` runs the suite.
+# The prototype's tests need the spatial environment. `spike-test` deselects the network and
+# arraylake tests, and the PYTHONPATH-dependent tests skip without the fork. See docs/fork-pin.md.
 check = "python checks/h5ad_virtualization.py"
 check-s3 = "python checks/virtualize_cellxgene.py"
 check-concat = "python checks/virtual_csr_concat.py"
@@ -66,7 +67,7 @@ zarr-files = { git = "https://github.com/earth-mover/zarr-files.git", rev = "81c
 icechunk-spatialdata = { path = "./icechunk-SpatialData", editable = true }
 
 [feature.spatial.tasks]
-spike-test = "pytest icechunk-SpatialData/tests -q -m 'not network and not arraylake'"
+spike-test = "pytest icechunk-SpatialData/tests -q -ra -m 'not network and not arraylake'; rc=$?; echo 'NOTE: network and arraylake tests are deselected. 14 core tests skip without the fork on PYTHONPATH. See docs/fork-pin.md.'; exit $rc"
 sdpr = "python scripts/fetch_spatialdata_pr1107.py"
 spatialdata = "python scripts/build_spatialdata_notebook.py"
 spatialdata-run = { cmd = "jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=3600 notebooks/spatialdata_on_icechunk.ipynb", depends-on = ["spatialdata"] }
