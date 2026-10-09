@@ -8,7 +8,7 @@ earthmover-demos/atera-cervical-virtual out of one 89 GB object. This notebook o
 works with it. The store matters only if that part feels ordinary.
 
 Execute the notebook against the PR #1107 branch, as with the other store notebooks.
-`pixi run sdpr` puts that branch in `vendor/`.
+`pixi run -e spatial sdpr` puts that branch in `vendor/`.
 """
 
 from _notebook import code, md, write

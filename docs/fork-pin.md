@@ -47,7 +47,14 @@ The path must be absolute, because `nbconvert` runs its kernel in the notebook d
 ## What changes without it
 
 Without `PYTHONPATH`, `spike-test` skips 14 tests. With it, the same run gives 27 passed and
-6 skipped. The SpatialData notebooks cannot run at all.
+6 skipped.
+
+Four notebooks need the fork. `spatialdata_on_icechunk` stops at an explicit check.
+`atera_from_arraylake`, `squidpy_xenium_virtual` and `xenium_tutorial_virtual` call
+`isd.parquet_in_store()`, which raises a `RuntimeError` without it.
+
+`xenium_from_arraylake` runs without the fork. It reads the cell boundaries with `geopandas`
+instead of the SpatialData reader. The data is the same. `virtualize_braun` does not use the fork.
 
 ## What the fork fixes
 

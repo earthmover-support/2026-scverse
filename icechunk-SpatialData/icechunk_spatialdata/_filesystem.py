@@ -66,8 +66,8 @@ def _store_module():
         ) from exc
     if not hasattr(store_module, "parquet_fs_fallback"):
         raise RuntimeError(
-            "this spatialdata has no `parquet_fs_fallback`; apply the patch series in ../upstream/ "
-            "to the PR #1107 checkout (`pixi run sdpr` does)"
+            "this spatialdata has no `parquet_fs_fallback`; use the pinned PR #1107 checkout; ../upstream/ documents its commits "
+            "(`pixi run -e spatial sdpr` fetches it)"
         )
     return store_module
 

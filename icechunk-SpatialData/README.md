@@ -885,8 +885,8 @@ release version. The notebook's header cell reports which version it loaded, so 
 the two:
 
 ```shell
-pixi run spatialdata-run                    # against the 0.8.0 release: fallback path
-pixi run sdpr        # clones into vendor/spatialdata-1107, which /tmp cleanup cannot reach
+pixi run -e spatial spatialdata-run      # against the 0.8.0 release: fallback path
+pixi run -e spatial sdpr        # clones into vendor/spatialdata-1107, which /tmp cleanup cannot reach
 PYTHONPATH=$PWD/vendor/spatialdata-1107/src pixi run -e spatial jupyter nbconvert --to notebook \
     --execute --inplace notebooks/spatialdata_on_icechunk.ipynb   # the committed version
 ```
@@ -911,7 +911,7 @@ Its tests include the **negative** claims that the patches in `upstream/` depend
 three claims. `write()` still refuses a store. `read_zarr` still fails on `.root`. The resolver
 passthrough alone is not sufficient. The tests run against a spatialdata without the patches. If
 upstream fixes any of them, the suite fails, and that failure shows that the document is stale.
-Against the patched checkout that `pixi run sdpr` produces, the tests skip.
+Against the pinned checkout that `pixi run -e spatial sdpr` produces, the tests skip.
 
 The `spatial` pixi feature and environment exist, with `no-default-feature = true`, as `census`
 does. The reason is dependency weight, not a resolver conflict, per the correction above.

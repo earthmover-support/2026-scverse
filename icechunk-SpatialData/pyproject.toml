@@ -17,3 +17,5 @@ markers = [
   "network: needs public S3 access",
   "arraylake: needs an Arraylake login, and reads a published demo repository",
 ]
+# spatialdata.testing imports the anndata and dask test modules, which use marks they never register.
+filterwarnings = ["ignore::pytest.PytestUnknownMarkWarning"]

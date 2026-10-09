@@ -23,14 +23,14 @@ from spatialdata import SpatialData
 def write(sdata: SpatialData, session) -> None:
     """Writes `sdata` and its geometry to the session's store with `SpatialData.write`."""
     if not isd.parquet_in_store_available():
-        pytest.skip("needs `parquet_fs_fallback` from the patch series in upstream/")
+        pytest.skip("needs `parquet_fs_fallback` from the pinned fork on PYTHONPATH; see docs/fork-pin.md")
     with isd.parquet_in_store():
         sdata.write(session.store)
 
 
 def read(session) -> SpatialData:
     if not isd.parquet_in_store_available():
-        pytest.skip("needs `parquet_fs_fallback` from the patch series in upstream/")
+        pytest.skip("needs `parquet_fs_fallback` from the pinned fork on PYTHONPATH; see docs/fork-pin.md")
     with isd.parquet_in_store():
         return SpatialData.read(session.store)
 
@@ -169,7 +169,7 @@ def test_two_snapshots_are_independently_readable(repo, sdata):
 def test_geoarrow_shapes_round_trip(repo, sdata):
     """The store holds GeoArrow polygons. Arrow clients read them and do not decode WKB."""
     if not isd.parquet_in_store_available():
-        pytest.skip("needs `parquet_fs_fallback` from the patch series in upstream/")
+        pytest.skip("needs `parquet_fs_fallback` from the pinned fork on PYTHONPATH; see docs/fork-pin.md")
     from spatialdata.testing import assert_spatial_data_objects_are_identical
 
     session = repo.writable_session("main")
@@ -451,7 +451,7 @@ def test_geometry_in_spatialdatas_own_format_inside_the_store(repo, sdata):
     from icechunk_spatialdata._filesystem import available
 
     if not available():
-        pytest.skip("needs `parquet_fs_fallback` from the patch series in upstream/")
+        pytest.skip("needs `parquet_fs_fallback` from the pinned fork on PYTHONPATH; see docs/fork-pin.md")
 
     with isd.transaction(repo, "main", "geometry inside the repo") as tx:
         write(sdata, tx.session)
@@ -1267,7 +1267,7 @@ def test_the_published_lung_store_still_holds_every_element(lung_session):
     verbatim. If an element name or a coordinate system changes here, the notebook cells fail.
     """
     if not isd.parquet_in_store_available():
-        pytest.skip("shapes need `parquet_fs_fallback` from the patch series in upstream/")
+        pytest.skip("shapes need `parquet_fs_fallback` from the pinned fork on PYTHONPATH; see docs/fork-pin.md")
     from spatialdata.models import get_axes_names
 
     sdata = read(lung_session)
