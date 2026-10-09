@@ -4,8 +4,8 @@ Run: pixi run check-store-path
 
 The script commits an image to an Icechunk repository and reads it back, which works on
 released packages. It writes the same shapes to a local store, which works. It then writes them
-to an Icechunk store, which raises, because the shapes writer reads `store.root` to build a
-parquet file path. The five commits linked in the output remove that limit.
+to an Icechunk store, which raises. The shapes writer reads `store.root` to build a parquet
+file path. The five commits linked in the output remove that limit.
 """
 
 from __future__ import annotations
