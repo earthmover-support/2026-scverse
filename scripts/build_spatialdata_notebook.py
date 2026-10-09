@@ -607,8 +607,8 @@ print("spec, so the element is (c, y, x) while the stored chunks stay channel-la
 print("384 references on this image, reading back identical to the stored image transposed.")
 print()
 print("The Xenium morphology images are JPEG 2000, which Zarr v3 had no codec for when this was")
-print("written. The TIFF parser this project reads images through supplies one, so those")
-print("../icechunk-SpatialData/ and 'the codec, found'.")
+print("written. The TIFF parser this repository reads images through supplies one, so those")
+print("images become references too. See ../icechunk-SpatialData/ and 'the codec, found'.")
 """)
 
 md("""

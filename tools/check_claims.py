@@ -9,10 +9,10 @@ bare word "conformant" stays usable, because it describes the SOMA spec's extens
 The em-dash scan reads a notebook's cell sources only. Its outputs carry machine text, and
 icechunk's own warnings hold em-dashes.
 
-Five notebooks need an Arraylake account, and EM_DASH_EXEMPT names them with their generators.
-One of them prints a line holding an em-dash, and its committed output carries the same
-character. Editing the source without a re-run would put the two out of step, and a re-run
-needs an account. The scan stays on every other file.
+One notebook needs an Arraylake account and prints a line holding an em-dash. Its committed
+output carries the same character. Editing the source without a re-run would put the two out of
+step, and a re-run needs an account. EM_DASH_EXEMPT names that notebook and its generator, and
+the scan stays on every other file.
 """
 
 import json
@@ -35,13 +35,11 @@ BANNED = [
     "no second implementation has ever",
     "the search found no competitor",
 ]
-# Notebooks that need an Arraylake account, with the generator each one must match exactly.
+# The only two files that carry an em-dash a re-run cannot remove, with the reason above.
+# The generator is here too, because it must match its notebook character for character.
 EM_DASH_EXEMPT = {
-    "notebooks/virtualize_braun.ipynb", "scripts/build_notebook.py",
-    "notebooks/xenium_from_arraylake.ipynb", "scripts/build_arraylake_xenium_notebook.py",
-    "notebooks/atera_from_arraylake.ipynb", "scripts/build_atera_notebook.py",
-    "notebooks/xenium_tutorial_virtual.ipynb", "scripts/build_xenium_tutorial_notebook.py",
-    "notebooks/squidpy_xenium_virtual.ipynb", "scripts/build_squidpy_xenium_notebook.py",
+    "notebooks/xenium_from_arraylake.ipynb",
+    "scripts/build_arraylake_xenium_notebook.py",
 }
 # The gate walks the whole tree. A floor catches a skip bug that silently narrows the scan.
 MINIMUM_FILES = 45  # The tree holds 52 scanned files. A collapsed scan falls under this.
@@ -83,10 +81,11 @@ def em_dashes(p):
 
 def main():
     bad = []
-    scanned = 0
+    scanned = dashed = 0
     for p in files():
         scanned += 1
         if p.relative_to(ROOT).as_posix() not in EM_DASH_EXEMPT:
+            dashed += 1
             for where in em_dashes(p):
                 bad.append(f"{p.relative_to(ROOT)}:{where}: em-dash")
         flat, lines = flatten(p.read_text(errors="ignore"))
@@ -103,7 +102,7 @@ def main():
         for line in sorted(bad):
             print(" ", line)
         return 1
-    print(f"claims OK ({scanned} files)")
+    print(f"claims OK ({scanned} files, {dashed} of them scanned for em-dashes)")
     return 0
 
 sys.exit(main())

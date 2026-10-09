@@ -140,9 +140,9 @@ Icechunk   InvalidInputError: invalid zarr key format `shapes/blobs_circles/shap
 LocalStore ACCEPTED the same key
 ```
 
-Icechunk is a Zarr store, not a key-value store. It accepts only `zarr.json` and chunk keys. The
-plan imagined an upstream change: buffer the Parquet, and hand the bytes to the store. That change
-would make shapes writable to S3 for SpatialData in general. It is a real improvement, but it
+Icechunk is a Zarr store, not a key-value store. It accepts only `zarr.json` and chunk keys. One
+upstream change would buffer the Parquet and hand the bytes to the store. That change would make
+shapes writable to S3 for SpatialData in general. It is a real improvement, but it
 still does not put geometry in Icechunk. So, for the purpose here, this result eliminates (a).
 
 **(b) Geometry as Zarr arrays: works, and costs nothing in bytes.** Both encodings round-trip all
@@ -362,8 +362,8 @@ the store test is a rediscovery, and it is useful only as confirmation.
 nowhere else. GitHub repository search returns 0 results, and PyPI returns 404. Its prerequisite is
 an open PR, and `main` still cannot write geometry to any remote store. So "already theirs" means
 *designed and intended*, not *implemented*. This project should still cede it. A duplicate of a
-published design that its own maintainers intend to execute is waste. But the plan must not imply
-that the code exists.
+published design that its own maintainers intend to execute is waste. But nothing here should
+imply that the code exists.
 
 **The report treats the prerequisites as done, and they are not.** It says that the read path
 supports Icechunk snapshots "following the finalization of cloud IO improvements [#1087]". Those
@@ -381,7 +381,7 @@ That design keeps Parquet and reaches it through an Arrow filesystem. It makes g
 to S3, but the geometry stays outside a Zarr store. That is not the "migrates parquet-based
 elements to native Zarr" that the Icechunk section assumes. Maybe the intent changed when another
 PR replaced PR #1087. Or maybe the migration is a separate piece that nobody has started. The
-sources do not say which, and this plan does not guess.
+sources do not say which, and this document does not guess.
 
 Either way, this **confirms the geometry test and does not overturn it**. On the current trajectory, geometry
 stays Parquet. So it stays outside any Icechunk transaction.
@@ -520,8 +520,8 @@ dask-partitioned points case works too. `points.parquet` becomes a *group* that 
 because the filesystem implements directory semantics.
 
 Upstream, the change is one extra branch in `parquet_fs_and_path`. For stores with no path, it
-returns a filesystem and does not raise. That is a far smaller ask than the format change that this
-plan assumed.
+returns a filesystem and does not raise. That is a far smaller ask than the format change the
+geometry test first assumed.
 
 ### Icechunk can support non-Zarr keys, but it should not
 

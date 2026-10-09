@@ -17,9 +17,9 @@ from _notebook import code, md, write
 md("""
 > **This notebook needs an Arraylake account.** It reads the Arraylake repository
 > `earthmover-demos/atera-cervical-virtual`, and Arraylake has no anonymous read. The committed
-> run opened one published 89 GB `outs.zip` through 47,599 element byte ranges, and read a
-> table of 717,576 cells by 27,105 features. The outputs below ship executed. A reader without
-> an account sees every value this run produced.
+> run opened one published 89 GB `outs.zip` through 47,599 element byte ranges. It read a table
+> of 717,576 cells by 27,105 features. The outputs below ship executed. A reader without an
+> account sees every value this run produced.
 """)
 
 DATASET = "https://www.10xgenomics.com/datasets/atera-wta-ffpe-human-cervical-cancer"

@@ -11,7 +11,6 @@ PATH_RE = re.compile(r"`([A-Za-z0-9_.][A-Za-z0-9_./-]*\.(?:py|md|ipynb|toml|lock
 # Paths outside this repository. A name here must belong to a third party's source tree, not to
 # a file this repository ought to carry.
 ALLOW = {
-    "abstract_specification.md",  # an external abstract specification
     # spatialdata's own modules, named so a maintainer can find the line under discussion.
     "_store.py", "spatialdata/_store.py",
     "_io/_utils.py", "spatialdata/_io/_utils.py",

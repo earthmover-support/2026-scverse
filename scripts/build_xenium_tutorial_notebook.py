@@ -27,7 +27,7 @@ from _notebook import code, md, write
 md("""
 > **This notebook needs an Arraylake account.** It reads the Arraylake repository
 > `earthmover-demos/xenium-lung-virtual`, and Arraylake has no anonymous read. The committed run
-> loaded seven elements from that repository and plotted them, and it concatenated 12 referenced
+> loaded seven elements from that repository and plotted them. It concatenated 12 referenced
 > transcript tiles into 190,077 transcripts. The outputs below ship executed. A reader without
 > an account sees every figure this run produced.
 """)

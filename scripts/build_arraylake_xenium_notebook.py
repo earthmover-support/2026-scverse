@@ -18,7 +18,7 @@ from _notebook import code, md, write
 md("""
 > **This notebook needs an Arraylake account.** It reads the Arraylake repository
 > `earthmover-demos/xenium-virtual-bundle`, and Arraylake has no anonymous read. The committed
-> run addressed 1.33 GB of published 10x files with 313 element references, and copied 14.0 MB
+> run addressed 1.33 GB of published 10x files with 313 element references. It copied 14.0 MB
 > of that, which is 1.05%. The outputs below ship executed. A reader without an account sees
 > every value this run produced.
 """)

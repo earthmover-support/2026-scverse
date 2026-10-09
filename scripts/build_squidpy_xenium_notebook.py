@@ -24,9 +24,9 @@ from _notebook import code, md, write
 md("""
 > **This notebook needs an Arraylake account.** It reads the Arraylake repository
 > `earthmover-demos/xenium-lung-virtual`, and Arraylake has no anonymous read. The committed run
-> built an AnnData of 162,254 cells by 541 genes from that repository, and ran the whole squidpy
-> Xenium tutorial on it. The outputs below ship executed. A reader without an account sees every
-> figure this run produced.
+> built an AnnData of 162,254 cells by 541 genes from that repository. It then ran the whole
+> squidpy Xenium tutorial on it. The outputs below ship executed. A reader without an account
+> sees every figure this run produced.
 """)
 
 TUTORIAL = "https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_xenium.html"
