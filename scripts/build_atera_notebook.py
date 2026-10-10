@@ -238,8 +238,8 @@ for name, node in root.members(max_depth=4):
         logical += int(np.prod(node.shape)) * node.dtype.itemsize
 
 print(f"{arrays:,} arrays addressing {logical / 1e9:,.1f} GB of pixels, counts and coordinates")
-print("held here: 47,599 element byte ranges plus the tiles view's re-emission of the H&E,")
-print("the cell identifiers, the gene names and two obs columns")
+print("held here: 47,599 element byte ranges, the cell identifiers, the gene names")
+print("and two obs columns")
 print("\\nabsent, and not by choice: morphology.ome.tif and the four morphology_focus channels,")
 print("29 GB deflated inside the same archive, where every interior offset stops existing")
 """)

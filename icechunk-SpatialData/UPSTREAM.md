@@ -127,8 +127,8 @@ verifier. A location on a store is the store plus a prefix inside it. A `Store` 
 component. With a `StorePath` on a `LocalStore`, every backing file is the container, not the
 element.
 
-conda-forge does not have 0.21.0. The `spatial` environment thus takes `spatialdata`,
-`spatialdata-io` and `ome-zarr` from PyPI.
+conda-forge does not have 0.21.0. The `spatial` environment thus takes `spatialdata` and
+`ome-zarr` from PyPI.
 
 ## Reproduction
 
@@ -141,5 +141,8 @@ pixi run -e spatial python icechunk-SpatialData/upstream/verify_store_read.py
 pixi run -e spatial python icechunk-SpatialData/upstream/verify_store_write.py
 pixi run -e spatial python icechunk-SpatialData/upstream/verify_repr.py
 ```
+
+`upstream/` holds three more verifiers: the deflated zip members, the FULL_OBJECT checksum and
+the transaction semantics. [`upstream/README.md`](upstream/README.md) describes each one.
 
 [`README.md`](README.md) holds the longer notes and the options we ruled out.

@@ -2,7 +2,9 @@
 
 Run: pixi run check-tenx
 
-The check needs network access and reads about 12 MB from the public 10x bucket.
+The check needs network access and reads about 24 MB from the public 10x bucket. It reads the
+same 12.1 MB file twice: once through fsspec for the h5py comparison, once to a temporary file
+for scanpy's read_10x_h5. The second read asks for the whole file in one GET.
 
 10x stores the matrix as CSC of shape (n_features, n_barcodes). Its indptr indexes barcodes and
 its indices hold feature indices. The same bytes are therefore CSR over cells, which is the
@@ -99,7 +101,8 @@ def main():
 
     import scanpy as sc
 
-    # `read_10x_h5` takes a path, not a handle. Write the 12 MB to a temporary file.
+    # `read_10x_h5` takes a path, not a handle. Write the 12.1 MB to a temporary file.
+    # `remote.read()` takes no length, so fsspec gets the whole file in one GET.
     with tempfile.TemporaryDirectory() as work:
         local = Path(work) / "cell_feature_matrix.h5"
         with fsspec.open(URL, "rb") as remote:

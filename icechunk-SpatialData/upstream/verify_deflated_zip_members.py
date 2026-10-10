@@ -4,7 +4,8 @@
 # ///
 """Deflate removes all addressability of an already-compressed archive member and saves nothing.
 
-Run: uv run verify_deflated_zip_members.py
+Run: pixi run -e spatial python icechunk-SpatialData/upstream/verify_deflated_zip_members.py
+The inline header above also lets `uv run` execute it outside this project.
 
 A zip's central directory locates every member. Thus a **stored** member is a contiguous byte
 range. All data inside that member keeps its offsets. For this reason, a reader can read a

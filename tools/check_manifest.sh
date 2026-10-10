@@ -4,6 +4,10 @@ set -u
 cd "$(dirname "$0")/.." || exit 1
 fail=0
 
+# A fixed /tmp name can be unwritable, and a failed redirect would skip a grep silently.
+hits=$(mktemp) || { echo "FAILED: cannot create a temporary file"; exit 1; }
+trap 'rm -f "$hits"' EXIT
+
 required=(
   LICENSE README.md .gitignore pixi.toml braun.py
   checks/_shards.py checks/h5ad_virtualization.py checks/virtualize_cellxgene.py
@@ -68,22 +72,25 @@ if git ls-files --error-unmatch h5ads >/dev/null 2>&1; then
   echo "TRACKED h5ads"; fail=1
 fi
 
-# No file may name the work that stays private.
+# No file may name the work that stays private. This gate carries the terms, so it exempts
+# itself by name and scans every other file, tools/ included. Two more gates hold the terms
+# as detection patterns, so they are exempt too.
 if grep -rIlw -i \
     -e 'virtual_omics' -e 'soma-on-icechunk' -e 'zarr-SOMA' -e 'zarr_soma' \
     -e 'somacore' -e 'tiledbsoma' -e 'h5mu' -e 'mudata' -e 'findings.md' \
     -e 'datascale-poster' -e 'probes/' -e 'seam' \
-    . --exclude-dir=.git --exclude-dir=.pixi --exclude-dir=tools --exclude-dir=vendor \
-    --exclude=pixi.lock >/tmp/soma_excluded_hits.txt 2>/dev/null; then
-  if [ -s /tmp/soma_excluded_hits.txt ]; then
-    echo "EXCLUDED TERMS IN:"; cat /tmp/soma_excluded_hits.txt; fail=1
+    . --exclude-dir=.git --exclude-dir=.pixi --exclude-dir=vendor \
+    --exclude=pixi.lock --exclude=check_manifest.sh --exclude=check_docstrings.py \
+    --exclude=check_readme.py >"$hits" 2>/dev/null; then
+  if [ -s "$hits" ]; then
+    echo "EXCLUDED TERMS IN:"; cat "$hits"; fail=1
   fi
 fi
 # A stale probes/ path must not survive the rename in Task 2.
 if grep -rIl -e 'probes/' . --exclude-dir=.git --exclude-dir=.pixi --exclude-dir=tools --exclude-dir=vendor \
-    --exclude=pixi.lock >/tmp/soma_probe_hits.txt 2>/dev/null; then
-  if [ -s /tmp/soma_probe_hits.txt ]; then
-    echo "STALE probes/ PATH IN:"; cat /tmp/soma_probe_hits.txt; fail=1
+    --exclude=pixi.lock >"$hits" 2>/dev/null; then
+  if [ -s "$hits" ]; then
+    echo "STALE probes/ PATH IN:"; cat "$hits"; fail=1
   fi
 fi
 

@@ -5,7 +5,8 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SKIP = {".git", ".pixi", "tools", "vendor", "__pycache__"}
+SKIP = {".git", ".pixi", "tools", "vendor", "__pycache__",
+        ".pytest_cache", ".ipynb_checkpoints", "h5ads"}
 # A leading dot is allowed, so a relative path in backticks is checked like a link target.
 PATH_RE = re.compile(r"`([A-Za-z0-9_.][A-Za-z0-9_./-]*\.(?:py|md|ipynb|toml|lock))`")
 # Paths outside this repository. A name here must belong to a third party's source tree, not to
@@ -25,7 +26,7 @@ ALLOW = {
 }
 LINK_RE = re.compile(r"\]\(([^)]+\.(?:py|md|ipynb|toml|lock))\)")
 # The gate walks the whole tree. A floor catches a skip bug that silently narrows the scan.
-MINIMUM_FILES = 45  # The tree holds 50 prose files. A collapsed scan falls under this.
+MINIMUM_FILES = 45  # The tree holds 49 prose files. A collapsed scan falls under this.
 
 def basenames():
     return {p.name for p in ROOT.rglob("*") if p.is_file() and not any(x in SKIP for x in p.relative_to(ROOT).parts)}

@@ -88,7 +88,8 @@ A reader for Xenium data is available in `spatialdata-io`. We use it to parse an
 """)
 
 md("""
-Here that step is already complete, and it copied nothing. The repository below references 10x's
+Here that step is already complete, and it copied 1% of the bytes. The repository below
+references 10x's
 published files directly. It follows the conventions of `spatialdata_io`, so the analysis does not
 change.
 """)

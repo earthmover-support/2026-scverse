@@ -563,7 +563,8 @@ cannot open a `ZarrTiffStore`, because it is a v2-style mapping, not a `Store`. 
 the entire level instead. For level 0, it fetched 450 MB. So this method gives no cheap random
 access at full resolution.
 
-So a repository can hold a whole Xenium bundle and store almost none of its bytes. The table's `X`
+So a repository can reference a Xenium bundle's table, geometry, transcripts and morphology MIP.
+It stores almost none of their bytes. The table's `X`
 is references into an h5ad. The geometry and transcripts are references into the published
 Parquet. The images are file references. The images as *arrays* are still missing. That is the
 codec gap, below.

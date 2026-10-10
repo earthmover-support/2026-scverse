@@ -449,9 +449,11 @@ renderer works in both.
 
 ## Deflate on an already-compressed member costs its addressability and saves nothing
 
-[`verify_deflated_zip_members.py`](verify_deflated_zip_members.py) reproduces it. Use `uv run`. The
-script carries its own dependencies inline and needs nothing from this project's environments. It
-is the one artefact here for the publisher to run. It has no patch, because the fix is not a code
+[`verify_deflated_zip_members.py`](verify_deflated_zip_members.py) reproduces it. Run
+`pixi run -e spatial python icechunk-SpatialData/upstream/verify_deflated_zip_members.py`. The
+script also carries its own dependencies inline, so `uv run` executes it outside this project.
+It needs nothing from this project's environments. It is the one artefact here for the publisher
+to run. It has no patch, because the fix is not a code
 change. The fix is one flag at packaging time. The same archive already uses that flag both ways.
 
 A zip's central directory locates every member. A **stored** member is thus a contiguous byte

@@ -192,7 +192,9 @@ print(snap_matrices)
 """)
 
 md("""
-Every chunk stays in CZI's bucket. The build copied nothing into the repository.
+Every chunk stays in CZI's bucket. The build copied no expression bytes into the repository.
+The next cell proves this. It asserts that every virtual chunk location starts with
+CZI's prefix, across all eleven source objects.
 """)
 
 code("""
@@ -371,7 +373,9 @@ Consider parts with lengths that are not exact multiples of a shared chunk size.
 concatenation of them needs one chunk to span two source files. For CSR the concat axis
 is `nnz`, and no dataset controls `nnz`. Also, h5py picks a different chunk shape for
 each file. Thus the store has one group per cell class. It has no single atlas-wide
-matrix. The fix for this limit needs ZEP003 variable-length chunks.
+matrix. The Zarr data model is not the blocker. A rectilinear chunk grid describes
+this concatenation, and zarr-python already ships one. VirtualiZarr is the blocker.
+It requires uniform chunk shapes when it combines manifests.
 
 **The chunking comes from the source, not from us.** References point at chunks that CZI
 wrote. Thus you cannot tune the chunk grid for a query pattern. A task that needs

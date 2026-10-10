@@ -24,8 +24,8 @@ Each row names the command, or the committed notebook, that supports it.
 | An image writes to an Icechunk store and reads back | `pixi run check-store-path` |
 | Labels and tables write through the fork's `SpatialData.write()` | `pixi run -e spatial versioning-run` |
 | Shapes need a filesystem path on released packages | `pixi run check-store-path` |
-| The Braun atlas store holds no expression bytes | `notebooks/virtualize_braun.ipynb`, committed |
-| A whole 10x Xenium bundle is addressable by reference | `notebooks/xenium_from_arraylake.ipynb`, committed |
+| The Braun atlas store holds no expression bytes | `notebooks/virtualize_braun.ipynb`, the `all_virtual_chunk_locations()` assertion |
+| 1.33 GB of a published 10x Xenium bundle is addressable by reference | `notebooks/xenium_from_arraylake.ipynb`, committed |
 | The scverse Xenium tutorial runs against a store holding almost none of its data | `notebooks/xenium_tutorial_virtual.ipynb`, committed |
 | The squidpy Xenium tutorial runs the same way | `notebooks/squidpy_xenium_virtual.ipynb`, committed |
 | One 89 GB published object opens as a SpatialData store | `notebooks/atera_from_arraylake.ipynb`, committed |
@@ -33,9 +33,10 @@ Each row names the command, or the committed notebook, that supports it.
 ### The tutorial notebooks are not unmodified
 
 Each tutorial notebook keeps the tutorial's text and its calls. Each lists every difference it
-makes, under a heading of its own. One difference is substantive. `morphology_focus` holds one
-channel, not four, because 10x deflate the other three inside a zip. No reference can point
-into a deflated member.
+makes, under a heading of its own. Two differences are substantive. The virtualization causes
+the first. `morphology_focus` holds one channel, not four, because 10x deflate the other three
+inside a zip. No reference can point into a deflated member. The second is in the squidpy
+notebook. Its two gene figures plot `MET` only, because `AREG` is not in this sample's panel.
 
 ### Two reference stores, measured
 
@@ -44,7 +45,8 @@ references. It copies 14.0 MB of that, which is 1.05%. The copies are the chunk 
 nothing else.
 
 `notebooks/atera_from_arraylake.ipynb` opens one published 89 GB `outs.zip`. The store holds
-47,599 element byte ranges. It holds no copy of the pixels and no copy of the counts.
+47,599 element byte ranges. It holds no copy of the pixels and no copy of the counts. 29 GB of
+the archive is deflated, so no reference can reach the morphology images.
 
 ### The Braun atlas, measured
 
@@ -78,7 +80,7 @@ positions on both sides.
 
 `pixi run check-sparsity` measures two cell classes at four chunk grids. ClassErythrocyte is
 1.01% dense and ClassFibroblast is 8.11% dense. Every block of every grid still holds a stored
-value. A dense grid therefore stores every block, however sparse the matrix is.
+value. A dense grid therefore stores every block.
 
 ## The upstream ask
 
@@ -149,6 +151,11 @@ One disclosure about a committed output. We corrected one label of the final cel
 reads "source file bytes", because the first wording was false. We changed no value. That
 notebook needs an Arraylake account, so a re-run could not produce the corrected label.
 
+A second disclosure about a committed output. `scripts/build_atera_notebook.py` no longer
+prints a line that named a viewer feature this repository removed. The committed output of
+`notebooks/atera_from_arraylake.ipynb` still holds that line. That notebook needs an
+Arraylake account, so no re-run could remove it.
+
 ## Reproducing
 
 Three tracks. Track 1 needs nothing but this repository. Track 2 needs the fork. Track 3 needs
@@ -169,15 +176,27 @@ pixi run check-s3          # a CELLxGENE h5ad into Icechunk, references only
 pixi run check-tenx        # a 10x Xenium matrix, CSR over cells
 pixi run check-concat      # why two virtual CSR matrices cannot concatenate
 pixi run check-icechunk    # stored size against commit count
-pixi run check-manifest    # manifest size against reference count
+pixi run check-manifest    # manifest size against reference count, the slowest check
 pixi run check-sparsity    # a dense grid stores every block
 pixi run check-store-path  # images work, shapes need a filesystem path
 pixi run -e spatial extension-test
 ```
 
 Two of those checks read a remote object. `pixi run check-s3` reads chunk metadata from CZI's
-public bucket, over 1,522 byte ranges. `pixi run check-tenx` reads about 12 MB from the public
-10x bucket. The rest run offline.
+public bucket, over 1,522 byte ranges. `pixi run check-tenx` reads about 24 MB from the public
+10x bucket, because it reads one 12.1 MB file twice. The rest run offline.
+
+A slow link to the 10x bucket makes `pixi run check-tenx` fail. It then raises
+`fsspec.exceptions.FSTimeoutError` after about five minutes. The check reads the whole matrix
+twice. The first read goes through `fsspec` with a 4 MB block, to compare the references
+against h5py. That read reaches the cap first. `aiohttp` ends a request after 300 seconds, and
+a slow bucket does not deliver 4 MB in that time. We met this twice on osx-arm64 on 2026-10-09.
+A plain `curl` range request for the same 4 MB took 385 seconds from the same host. That rate
+is about 11 kB/s. The second read copies the file for `read_10x_h5`. It calls `remote.read()`
+with no length, so `fsspec` issues one GET for the whole 12.1 MB file. That request ignores the
+block size, so a smaller block cannot help it. The third run of the same check passed, about an
+hour later. `tools/verify.sh` prints `FAILED: pixi run check-tenx` and exits 1 when this
+happens. The check passes when the link carries 4 MB in under 300 seconds.
 
 Two checks measure more with local data. `pixi run check-sparsity` needs two Braun `.h5ad`
 files in `h5ads/`, and prints their download URLs when they are missing. `pixi run check-s3`

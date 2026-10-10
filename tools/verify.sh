@@ -85,11 +85,16 @@ if [ "$with_data" -eq 1 ]; then
 
   nb=notebooks/spatialdata_versioning.ipynb
   fork=$PWD/vendor/spatialdata-1107/src
-  if [ ! -d "$fork" ]; then
+  if [ "$tracked" -eq 0 ]; then
+    # Outside a git tree the committed outputs are the only copy, and a run destroys them.
+    echo "FAILED: --with-data regenerates a notebook and this is not a git checkout."
+    echo "The run is skipped, because nothing could restore $nb. Use a git clone."
+    fail=1
+  elif [ ! -d "$fork" ]; then
     echo "FAILED: versioning-run needs the SpatialData fork at $fork"
     echo "Run 'pixi run -e spatial sdpr' first. See docs/fork-pin.md."
     fail=1
-  elif [ "$tracked" -eq 1 ] && ! git diff --quiet -- "$nb"; then
+  elif ! git diff --quiet HEAD -- "$nb"; then
     echo "FAILED: $nb has uncommitted changes."
     echo "versioning-run regenerates it, and those changes cannot be recovered."
     fail=1
@@ -115,7 +120,21 @@ else
   echo "MEASURED: the data-dependent check ran against local h5ads."
 fi
 if [ -n "$test_skips" ] && [ "$test_skips" != "0" ]; then
-  echo "SKIPPED: $test_skips tests, which need the fork on PYTHONPATH. See docs/fork-pin.md."
+  # Two reasons produce a skip: the absent fork, and an optional package the lock omits.
+  fork_skips=$(echo "$test_out" |
+    awk '/^SKIPPED \[/ && /pinned fork on PYTHONPATH/ {gsub(/[^0-9]/, "", $2); n += $2}
+         END {print n + 0}')
+  # The awk matches one skip reason. A reworded reason prints a meaningless zero, so a zero
+  # fails unless the caller already put the fork on PYTHONPATH, where zero is the right count.
+  pp="${PYTHONPATH:-}"
+  if [ "$fork_skips" -eq 0 ] && [ "${pp#*spatialdata-1107}" = "$pp" ]; then
+    echo "FAILED: $test_skips tests skipped and none names the fork on PYTHONPATH."
+    echo "  The skip reason changed, so tools/verify.sh cannot classify these skips."
+    fail=1
+  else
+    echo "SKIPPED: $test_skips tests. $fork_skips of them need the fork on PYTHONPATH."
+    echo "  See docs/fork-pin.md. The rest need a package this environment does not hold."
+  fi
 fi
 # An empty state means check-s3 never reported, so the script says nothing about it.
 if [ "$s3_state" = "unverified" ]; then

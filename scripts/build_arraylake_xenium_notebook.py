@@ -36,8 +36,8 @@ This notebook is the read side. The build side needs an Arraylake account, so it
 outside this repository. The design and its constraints are in
 [`../icechunk-SpatialData/README.md`](../icechunk-SpatialData/README.md).
 
-Most of this notebook looks like ordinary data access. Only the byte counters show that the repo
-copied nothing.
+Most of this notebook looks like ordinary data access. Only the byte counters show how little
+the repo copied.
 """)
 
 md("""

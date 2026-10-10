@@ -17,10 +17,10 @@ The short version:
 
 * **Versioning works** for rasters and tables. It is also SpatialData's own plan, and SpatialData
   scoped it in more detail than this work reached.
-* **Geometry** can join the transaction only as Zarr arrays. That costs no bytes, but it forfeits
-  interoperability.
-* **References work today for OME-Zarr sources.** They need nothing built, and nobody in this
-  ecosystem claims them.
+* **Geometry** can join the transaction only as Zarr arrays. That costs no more bytes than
+  GeoParquet, but it forfeits interoperability.
+* **References work today for OME-Zarr sources.** They need nothing built. The prior-art
+  review found no claim on them.
 * **References to OME-TIFF** had exactly one missing piece: a Zarr v3 JPEG 2000 codec. The reason
   first given here was not the blocker. That piece exists. The images become references through
   `virtual-tiff`, which supplies the codec with thirteen other compressions.
@@ -145,8 +145,8 @@ upstream change would buffer the Parquet and hand the bytes to the store. That c
 shapes writable to S3 for SpatialData in general. It is a real improvement, but it
 still does not put geometry in Icechunk. So, for the purpose here, this result eliminates (a).
 
-**(b) Geometry as Zarr arrays: works, and costs nothing in bytes.** Both encodings round-trip all
-three `blobs()` shape elements, and the geometry stays byte-identical:
+**(b) Geometry as Zarr arrays: works.** It costs no more bytes than GeoParquet. Both encodings
+round-trip all three `blobs()` shape elements, and the geometry stays byte-identical:
 
 * **(b1) blob.** The GeoParquet bytes go into one 1-D `uint8` array. It is exact, trivial and
   opaque.
@@ -207,8 +207,9 @@ needs a conversion of 6.46 GB of images. That conversion is a copy, and the goal
 Ranked by the measurements:
 
 1. **(b2) native arrays** is the only option that puts the whole dataset under one transaction. It
-   is also free in bytes. Its cost: no existing reader understands the result. For a format whose
-   value *is* interoperability, that cost alone nearly disqualifies it.
+   also costs no more bytes than GeoParquet. Its cost: no existing reader understands the
+   result. For a format whose value *is* interoperability, that cost alone nearly disqualifies
+   it.
 2. **(a) upstream** has merit on its own. It would make SpatialData's geometry writable to the
    cloud. SpatialData cannot write geometry to any remote store today. But (a) does not serve the
    question here.
@@ -423,10 +424,11 @@ reduces those path assumptions from eight sites to four, and all four are in `_i
 `write()` and the geometry writers refuse a pathless store with deliberate, informative messages,
 not `AttributeError`s. `path_from_store` documents that it returns `None` for pathless stores.
 
-**Unchanged by #1107:** every functional outcome. The prototype's 56 tests pass identically on
-both. The exception is the one test that exercises the fsspec extension point, which skips on the
-release. Element writers work against a group on an Icechunk store. `write()` and `read_zarr()`
-still refuse one. Geometry still cannot enter one, for two reasons. `parquet_fs_and_path` raises
+**Unchanged by #1107:** every functional outcome. The prototype's suite collects 53 tests.
+Without the fork, `extension-test` gives 17 passed, 16 skipped and 20 deselected. With the fork
+it gives 27 passed, 6 skipped and 20 deselected. No test fails on either. The ten tests that
+move exercise the fsspec extension point. Element writers work against a group on an Icechunk
+store. `write()` and `read_zarr()` still refuse one. Geometry still cannot enter one, for two reasons. `parquet_fs_and_path` raises
 for any store that is not `LocalStore` or `FsspecStore`. Icechunk also refuses non-Zarr keys
 regardless.
 
@@ -585,8 +587,8 @@ Multiple chunks help on read, because pyarrow fetches slices on demand:
 | one row group | 4.13 MB, 47% |
 | the whole table | 8.87 MB, 100% |
 
-So a SpatialData store over a whole Xenium bundle could hold almost none of the bytes. The table's
-`X` is references into the h5ad. The geometry and transcripts are references into the published
+So a SpatialData store over a Xenium bundle's table, geometry and transcripts could hold
+almost none of the bytes. The table's `X` is references into the h5ad. The geometry and transcripts are references into the published
 Parquet. Only the images are outside this method, for the codec reason, which is a separate issue.
 
 `reference_file` in [`_reference.py`](icechunk_spatialdata/_reference.py) implements this, with two
@@ -755,12 +757,12 @@ The measurements are complete. The answer is: do not build a package.
 than this work reached. That scope includes the failure mode the store test found. A competing
 implementation would duplicate work that the format maintainers already designed.
 
-**Contribution 2, references: real, unclaimed, and no longer blocked.** OME-Zarr sources work as
+**Contribution 2, references: real, unclaimed in the review, and no longer blocked.** OME-Zarr sources work as
 references natively today. OME-TIFF sources are 90% of a Xenium bundle by bytes. They needed
 a Zarr v3 JPEG 2000 codec. The image test found the codec missing, but `osml-imagery-io` ships
 one: see
-[the codec, found](#the-codec-found). So all of a Xenium bundle works as references: table,
-geometry, transcripts and images. None of it is a SpatialData contribution.
+[the codec, found](#the-codec-found). So every element class of a Xenium bundle works as
+references: table, geometry, transcripts and images. The stores still copy the tails. None of it is a SpatialData contribution.
 
 So the result is this write-up plus two narrow findings for upstream:
 
@@ -774,10 +776,11 @@ So the result is this write-up plus two narrow findings for upstream:
    as Zarr arrays is 11.4 MB against GeoParquet's 12.2 MB. So "native Zarr for shapes and points"
    is not the size regression that a reader might assume.
 
-This repository keeps the measurements. Nobody else has written them down:
+This repository keeps the measurements. The prior-art review found no other write-up of
+them:
 
 * The writers that work against a store today, and the exact way the public API refuses one.
-* Geometry in Zarr is free in bytes.
+* Geometry in Zarr costs no more bytes than GeoParquet.
 * A JPEG2000-tiled OME-TIFF is a Zarr array of byte ranges, once one codec stops shadowing its own
   read path.
 
@@ -790,9 +793,10 @@ point, it demonstrates the geometry fix. Without it, the notebook uses the array
 why.
 
 **The committed outputs come from a run against #1107's branch.** So the geometry section shows
-the real fix and not the fallback. Both runs are clean. `pixi run -e spatial spatialdata-run` reproduces the
-release version. The notebook's header cell reports which version it loaded, so nobody confuses
-the two:
+the real fix and not the fallback. The committed run completes without error. It prints four
+`no parent found` lines, which the project keeps on purpose. `pixi run -e spatial spatialdata-run`
+reproduces the release version. This repository holds no output of that second run. The
+notebook's header cell reports which version it loaded, so nobody confuses the two:
 
 ```shell
 pixi run -e spatial spatialdata-run      # against the 0.8.0 release: fallback path

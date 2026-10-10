@@ -6,7 +6,8 @@ import sys
 import tomllib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SKIP = {".git", ".pixi", "tools", "vendor", "__pycache__"}
+SKIP = {".git", ".pixi", "tools", "vendor", "__pycache__",
+        ".pytest_cache", ".ipynb_checkpoints", "h5ads"}
 RUN_RE = re.compile(r"pixi run (?:(?:-e|--environment)[ =]\S+\s+)?([A-Za-z0-9][A-Za-z0-9_-]*)")
 # `pixi run python x.py` runs the environment's interpreter, not a task the manifest defines.
 INTERPRETERS = {"python"}
